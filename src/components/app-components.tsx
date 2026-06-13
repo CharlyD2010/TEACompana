@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Star, ChevronLeft } from 'lucide-react';
+import { Star, ChevronLeft, Loader2, Inbox } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export const AppButton = ({ className, ...props }: React.ComponentProps<typeof Button>) => (
@@ -31,7 +31,7 @@ export const AppHeader = ({ title, showBack = true, children }: { title: string,
             <ChevronLeft className="h-6 w-6" />
           </Button>
         )}
-        <h1 className="text-2xl font-bold text-primary">{title}</h1>
+        <h1 className="text-xl font-black text-primary uppercase tracking-tight">{title}</h1>
       </div>
       {children}
     </div>
@@ -67,7 +67,7 @@ export const SelectChip = ({
   <button
     onClick={onClick}
     className={cn(
-      "px-4 py-2 rounded-full border-2 transition-all font-medium",
+      "px-4 py-2 rounded-full border-2 transition-all font-bold text-xs uppercase",
       selected 
         ? "bg-primary border-primary text-white shadow-md" 
         : "bg-white border-muted text-muted-foreground hover:border-primary/50"
@@ -75,4 +75,36 @@ export const SelectChip = ({
   >
     {label}
   </button>
+);
+
+export const LoadingState = ({ message = "Cargando información..." }: { message?: string }) => (
+  <div className="flex flex-col items-center justify-center p-12 space-y-4">
+    <Loader2 className="w-10 h-10 text-primary animate-spin" />
+    <p className="text-sm font-bold text-muted-foreground uppercase">{message}</p>
+  </div>
+);
+
+export const EmptyState = ({ 
+  title, 
+  description, 
+  actionLabel, 
+  onAction 
+}: { 
+  title: string, 
+  description: string, 
+  actionLabel?: string, 
+  onAction?: () => void 
+}) => (
+  <div className="flex flex-col items-center justify-center p-12 text-center space-y-6">
+    <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
+      <Inbox className="w-10 h-10 text-muted-foreground" />
+    </div>
+    <div className="space-y-2">
+      <h3 className="text-xl font-black text-primary uppercase">{title}</h3>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </div>
+    {actionLabel && onAction && (
+      <AppButton onClick={onAction}>{actionLabel}</AppButton>
+    )}
+  </div>
 );
