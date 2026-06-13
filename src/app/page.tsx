@@ -1,20 +1,38 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppButton, AppInput, AppCard } from '@/components/app-components';
-import { Heart } from 'lucide-react';
+import { Heart, Loader2 } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useAuth } from '@/firebase';
+import { toast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
   const router = useRouter();
+  const auth = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, handle auth. For now, just redirect to dashboard
-    router.push('/dashboard');
+    if (!auth) return;
+    
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/children');
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al iniciar sesión",
+        description: "Correo o contraseña incorrectos.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -37,6 +55,7 @@ export default function LoginPage() {
               required 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
             />
           </div>
           
@@ -48,21 +67,21 @@ export default function LoginPage() {
               required 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
             />
           </div>
 
-          <AppButton type="submit" className="w-full h-14 text-lg">
-            Iniciar Sesión
+          <AppButton type="submit" className="w-full h-14 text-lg" disabled={loading}>
+            {loading ? <Loader2 className="animate-spin" /> : "Iniciar Sesión"}
           </AppButton>
         </form>
 
         <div className="mt-8 text-center space-y-4">
-          <button className="text-sm font-bold text-primary hover:underline">¿Olvidaste tu contraseña?</button>
           <div className="flex flex-col gap-2">
-            <AppButton variant="outline" className="w-full" onClick={() => router.push('/register/parent')}>
+            <AppButton variant="outline" className="w-full" onClick={() => router.push('/register-parent')} disabled={loading}>
               Registrar como Padre/Tutor
             </AppButton>
-            <AppButton variant="ghost" className="w-full" onClick={() => router.push('/register/teacher')}>
+            <AppButton variant="ghost" className="w-full" onClick={() => router.push('/register-teacher')} disabled={loading}>
               Registrar como Docente
             </AppButton>
           </div>

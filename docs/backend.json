@@ -1,0 +1,120 @@
+
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["parent", "teacher", "admin"] },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "fullName", "email", "role"]
+    },
+    "Child": {
+      "title": "Child",
+      "description": "Child profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "createdBy": { "type": "string", "description": "UID of the creator" },
+        "name": { "type": "string" },
+        "birthDate": { "type": "string", "format": "date" },
+        "teaLevel": { "type": "string", "enum": ["leve", "moderado", "severo"] },
+        "interests": { "type": "array", "items": { "type": "string" } },
+        "learningStyle": { "type": "string", "enum": ["visual", "auditivo", "kinestésico", "mixto"] },
+        "avatarUrl": { "type": "string" },
+        "medicalNotes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "points": { "type": "number" },
+        "stars": { "type": "number" }
+      },
+      "required": ["id", "createdBy", "name", "teaLevel"]
+    },
+    "Assessment": {
+      "title": "Initial Assessment",
+      "description": "Initial developmental assessment scores",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "childId": { "type": "string" },
+        "conductedBy": { "type": "string" },
+        "scores": {
+          "type": "object",
+          "properties": {
+            "emociones": { "type": "number" },
+            "comunicacion": { "type": "number" },
+            "social": { "type": "number" },
+            "cognitivo": { "type": "number" },
+            "motricidad": { "type": "number" },
+            "rutinas": { "type": "number" }
+          }
+        },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "LearningPlan": {
+      "title": "Learning Plan",
+      "description": "AI generated learning plan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "childId": { "type": "string" },
+        "priorityAreas": { "type": "array", "items": { "type": "string" } },
+        "weeklyGoals": { "type": "array", "items": { "type": "string" } },
+        "recommendedActivities": { "type": "array", "items": { "type": "string" } },
+        "parentSuggestions": { "type": "array", "items": { "type": "string" } },
+        "teacherSuggestions": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "GameSession": {
+      "title": "Game Session",
+      "description": "Recording of a game activity",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "childId": { "type": "string" },
+        "gameId": { "type": "string" },
+        "userId": { "type": "string" },
+        "score": { "type": "number" },
+        "stars": { "type": "number" },
+        "correctAnswers": { "type": "number" },
+        "incorrectAnswers": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "durationSeconds": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Registered user profiles"
+    },
+    "/children/{childId}": {
+      "schema": "Child",
+      "description": "Children profiles"
+    },
+    "/children/{childId}/assessments/{assessmentId}": {
+      "schema": "Assessment",
+      "description": "Assessments per child"
+    },
+    "/children/{childId}/learning_plans/{planId}": {
+      "schema": "LearningPlan",
+      "description": "Learning plans per child"
+    },
+    "/children/{childId}/game_sessions/{sessionId}": {
+      "schema": "GameSession",
+      "description": "Activity history per child"
+    }
+  }
+}
