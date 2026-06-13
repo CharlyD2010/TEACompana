@@ -4,8 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppButton, AppInput, AppCard } from '@/components/app-components';
 import { Heart, Loader2 } from 'lucide-react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/config/firebase';
+import { authService } from '@/services/authService';
 import { toast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
@@ -18,7 +17,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await authService.login(email, password);
       router.push('/children');
     } catch (error: any) {
       toast({
@@ -83,10 +82,6 @@ export default function LoginPage() {
           </div>
         </div>
       </AppCard>
-
-      <p className="mt-12 text-xs text-muted-foreground text-center max-w-xs">
-        Al continuar, aceptas nuestros términos de servicio y políticas de privacidad.
-      </p>
     </div>
   );
 }

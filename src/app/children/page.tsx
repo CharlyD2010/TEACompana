@@ -1,37 +1,39 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppButton, AppCard, AppHeader } from '@/components/app-components';
-import { Plus, User, ChevronRight, Settings, LogOut, Loader2 } from 'lucide-react';
+import { Plus, User, ChevronRight, LogOut, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAuth, useCollection, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
-import { signOut } from 'firebase/auth';
+import { authService } from '@/services/authService';
+import { childrenService } from '@/services/childrenService';
+import { useUser } from '@/firebase';
 
 export default function MyChildrenPage() {
   const router = useRouter();
-  const auth = useAuth();
-  const db = useFirestore();
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
+  const [children, setChildren] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const childrenQuery = query(
-    collection(db!, 'children'),
-    where('createdBy', '==', user?.uid || 'none')
-  );
-  
-  const { data: children, loading } = useCollection(childrenQuery);
+  useEffect(() => {
+    async function loadChildren() {
+      if (user) {
+        const data = await childrenService.getChildrenForUser(user.uid);
+        setChildren(data);
+      }
+      setLoading(false);
+    }
+    if (!userLoading) {
+      loadChildren();
+    }
+  }, [user, userLoading]);
 
   const handleLogout = async () => {
-    if (auth) {
-      await signOut(auth);
-      router.push('/');
-    }
+    await authService.logout();
+    router.push('/');
   };
 
-  if (loading) {
+  if (loading || userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-12 h-12 text-primary animate-spin" />
@@ -42,11 +44,9 @@ export default function MyChildrenPage() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <AppHeader title="Mis Niños" showBack={false}>
-        <div className="flex gap-2">
-          <AppButton variant="ghost" size="icon" className="rounded-full text-destructive" onClick={handleLogout}>
-            <LogOut className="h-5 w-5" />
-          </AppButton>
-        </div>
+        <AppButton variant="ghost" size="icon" className="rounded-full text-destructive" onClick={handleLogout}>
+          <LogOut className="h-5 w-5" />
+        </AppButton>
       </AppHeader>
 
       <div className="p-6 space-y-6">
@@ -57,13 +57,12 @@ export default function MyChildrenPage() {
           </AppButton>
         </div>
 
-        {!children || children.length === 0 ? (
+        {children.length === 0 ? (
           <AppCard className="p-12 text-center border-2 border-dashed border-muted bg-transparent shadow-none">
             <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <User className="w-10 h-10 text-muted-foreground" />
             </div>
             <h3 className="text-xl font-bold text-muted-foreground mb-2">No tienes niños registrados</h3>
-            <p className="text-muted-foreground mb-6">Agrega el perfil de un niño para comenzar su plan de aprendizaje.</p>
             <AppButton onClick={() => router.push('/children/create')}>
               Agregar mi primer niño
             </AppButton>
