@@ -1,12 +1,12 @@
 'use client';
 
-import { collection, doc, setDoc, updateDoc, increment, query, where, getDocs, orderBy } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { doc, setDoc, updateDoc, increment, Firestore } from 'firebase/firestore';
 
 export const gameService = {
-  saveSession: async (childId: string, userId: string, sessionData: any) => {
+  saveSession: async (db: Firestore, childId: string, userId: string, sessionData: any) => {
     const sessionId = Math.random().toString(36).substr(2, 9);
-    const ref = doc(db, 'game_sessions', sessionId);
+    // Ruta correcta según las reglas: /children/{childId}/game_sessions/{id}
+    const ref = doc(db, 'children', childId, 'game_sessions', sessionId);
     
     const session = {
       ...sessionData,
@@ -16,25 +16,16 @@ export const gameService = {
       createdAt: new Date().toISOString(),
     };
 
+    // Usar setDoc para guardar en la subcolección
     await setDoc(ref, session);
 
-    // Update child totals
+    // Actualizar los totales del niño
     const childRef = doc(db, 'children', childId);
     await updateDoc(childRef, {
-      points: increment(session.score || 0),
-      stars: increment(session.stars || 0)
+      points: increment(sessionData.score || 0),
+      stars: increment(sessionData.stars || 0)
     });
 
-    return session;
-  },
-
-  getSessions: async (childId: string) => {
-    const q = query(
-      collection(db, 'game_sessions'),
-      where('childId', '==', childId),
-      orderBy('createdAt', 'desc')
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map(d => d.data());
+    return sessionId;
   }
 };

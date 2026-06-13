@@ -26,7 +26,7 @@ service cloud.firestore {
     // Reglas para Relaciones de Acceso
     match /child_access/{accessId} {
       allow read: if isLoggedIn() && resource.data.userId == request.auth.uid;
-      // Solo el sistema o procesos controlados crean accesos (aquí permitimos si es el creador del registro)
+      // El cliente puede crear el registro determinista al crear el niño
       allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if false; 
     }
@@ -47,8 +47,8 @@ service cloud.firestore {
     // Reglas para el catálogo de Recompensas (Metadata)
     match /rewards/{rewardId} {
       allow read: if isLoggedIn();
-      // Solo administradores pueden crear/editar recompensas generales
-      allow write: if isLoggedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Solo administradores pueden escribir (gestión manual en consola)
+      allow write: if false;
     }
   }
 }

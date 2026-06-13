@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -44,6 +43,7 @@ export default function CreateChildPage() {
     const childRef = doc(db, 'children', childId);
 
     try {
+      // 1. Crear el perfil del niño
       await setDoc(childRef, {
         ...formData,
         id: childId,
@@ -54,8 +54,9 @@ export default function CreateChildPage() {
         createdAt: new Date().toISOString(),
       });
 
-      // Crear registro de acceso
-      const accessId = Math.random().toString(36).substr(2, 9);
+      // 2. Crear registro de acceso DETERMINISTA (userId_childId)
+      // Esto es CRÍTICO para que las Security Rules funcionen con exists()
+      const accessId = `${user.uid}_${childId}`;
       await setDoc(doc(db, 'child_access', accessId), {
         id: accessId,
         childId,

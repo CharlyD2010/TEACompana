@@ -1,10 +1,9 @@
-
 'use client';
 
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppCard, AppButton, LoadingState } from '@/components/app-components';
-import { Trophy, Star, RotateCcw, Home, Loader2, Target, Clock, ArrowRight } from 'lucide-react';
+import { Trophy, Star, RotateCcw, Home, Clock, Target, AlertCircle } from 'lucide-react';
 import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
@@ -13,19 +12,21 @@ export default function ResultsPage() {
   const router = useRouter();
   const db = useFirestore();
   
-  const { data: session, loading, error } = useDoc(
-    db && childId && sessionId 
-      ? doc(db, 'children', childId as string, 'game_sessions', sessionId as string) 
-      : null
-  );
+  // Ruta de subcolección según backend.json
+  const sessionRef = db && childId && sessionId 
+    ? doc(db, 'children', childId as string, 'game_sessions', sessionId as string) 
+    : null;
+    
+  const { data: session, loading, error } = useDoc(sessionRef);
 
   if (loading) return <div className="min-h-screen bg-primary flex items-center justify-center"><LoadingState message="Cargando resultados..." /></div>;
   
   if (error || !session) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center space-y-6">
+        <AlertCircle className="w-16 h-16 text-destructive" />
         <h2 className="text-2xl font-black text-primary uppercase">¡Ups! No encontramos el resultado</h2>
-        <p className="text-muted-foreground">Hubo un problema al cargar la información de esta sesión.</p>
+        <p className="text-muted-foreground">Hubo un problema de permisos o la sesión no existe.</p>
         <AppButton onClick={() => router.push(`/child/${childId}/activities`)}>Volver a Actividades</AppButton>
       </div>
     );
@@ -35,7 +36,6 @@ export default function ResultsPage() {
     <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6 text-white overflow-y-auto">
       <div className="w-full max-w-md animate-in slide-in-from-bottom-10 duration-500">
         <AppCard className="p-8 bg-white text-foreground text-center space-y-8 relative overflow-hidden">
-          {/* Confetti decoration elements would go here */}
           <div className="absolute top-0 left-0 w-full h-2 bg-accent opacity-50"></div>
           
           <div className="space-y-2">
@@ -71,7 +71,7 @@ export default function ResultsPage() {
               <Clock className="w-4 h-4" /> {session.durationSeconds} seg
             </div>
             <div className="flex items-center justify-center gap-2">
-              <Target className="w-4 h-4" /> {session.correctAnswers}/{session.totalQuestions}
+              <Target className="w-4 h-4" /> {session.correctAnswers}/{session.totalQuestions || (session.correctAnswers + session.incorrectAnswers)}
             </div>
           </div>
 
@@ -92,10 +92,6 @@ export default function ResultsPage() {
             </AppButton>
           </div>
         </AppCard>
-      </div>
-      
-      <div className="mt-8 text-center">
-        <p className="text-white/60 text-xs font-black uppercase tracking-widest">¡Has ganado {session.stars} estrellas hoy!</p>
       </div>
     </div>
   );

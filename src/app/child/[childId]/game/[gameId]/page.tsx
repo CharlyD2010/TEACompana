@@ -1,9 +1,8 @@
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AppCard, AppButton } from '@/components/app-components';
+import { AppButton } from '@/components/app-components';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
@@ -34,14 +33,6 @@ const GAME_DATA: Record<string, any> = {
     questions: [
       { id: 1, text: '¿Cuántas manzanas hay? 🍎 🍎', options: ['1', '2', '3', '4'], correct: 1 },
       { id: 2, text: '¿Cuántas estrellas hay? ⭐ ⭐ ⭐', options: ['2', '3', '4', '5'], correct: 1 },
-    ]
-  },
-  g4: {
-    name: 'Rutinas Diarias',
-    area: 'Rutinas',
-    questions: [
-      { id: 1, text: '¿Qué hacemos PRIMERO al despertar?', options: ['🛌', '🥣', '🚿', '🎒'], correct: 0 },
-      { id: 2, text: '¿Qué hacemos antes de comer?', options: ['🧼', '🎮', '📺', '🎨'], correct: 0 },
     ]
   }
 };
@@ -105,43 +96,47 @@ export default function GamePlayPage() {
       createdAt: new Date().toISOString(),
     };
 
-    // 1. Guardar Sesión
+    // 1. Guardar Sesión en subcolección
     const sessionRef = doc(db, 'children', childId as string, 'game_sessions', sessionId);
-    setDoc(sessionRef, sessionData).catch(async () => {
+    
+    try {
+      await setDoc(sessionRef, sessionData);
+
+      // 2. Actualizar Progreso (game_progress como subcolección)
+      const progressId = `${childId}_${gameId}`;
+      const progressRef = doc(db, 'children', childId as string, 'game_progress', progressId);
+      await setDoc(progressRef, {
+        id: progressId,
+        childId,
+        gameId,
+        gameName: game.name,
+        stars: stars,
+        points: finalCorrect * 10,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+
+      // 3. Actualizar Totales del Niño
+      const childRef = doc(db, 'children', childId as string);
+      await updateDoc(childRef, {
+        points: increment(finalCorrect * 10),
+        stars: increment(stars)
+      });
+
+      // Navegar a resultados
+      router.push(`/child/${childId}/results/${sessionId}`);
+    } catch (e: any) {
+      setIsFinishing(false);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: sessionRef.path,
         operation: 'create',
         requestResourceData: sessionData
       }));
-    });
-
-    // 2. Actualizar Progreso (game_progress)
-    const progressId = `${childId}_${gameId}`;
-    const progressRef = doc(db, 'children', childId as string, 'game_progress', progressId);
-    setDoc(progressRef, {
-      id: progressId,
-      childId,
-      gameId,
-      gameName: game.name,
-      stars: stars, // Se puede mejorar para guardar el máximo histórico
-      points: finalCorrect * 10,
-      updatedAt: serverTimestamp(),
-    }, { merge: true });
-
-    // 3. Actualizar Totales del Niño
-    const childRef = doc(db, 'children', childId as string);
-    updateDoc(childRef, {
-      points: increment(finalCorrect * 10),
-      stars: increment(stars)
-    }).catch(() => {});
-
-    // Navegar a resultados
-    router.push(`/child/${childId}/results/${sessionId}`);
+    }
   };
 
   if (isFinishing) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background space-y-4">
         <Loader2 className="w-12 h-12 text-primary animate-spin" />
         <p className="font-black text-primary uppercase animate-pulse">Guardando resultados...</p>
       </div>
@@ -189,7 +184,7 @@ export default function GamePlayPage() {
               {feedback === 'correct' ? (
                 <CheckCircle2 className="w-24 h-24 text-white animate-bounce" />
               ) : (
-                <XCircle className="w-24 h-24 text-white animate-shake" />
+                <XCircle className="w-24 h-24 text-white" />
               )}
             </div>
             <h3 className={`text-5xl font-black uppercase tracking-widest ${feedback === 'correct' ? 'text-secondary' : 'text-destructive'}`}>
