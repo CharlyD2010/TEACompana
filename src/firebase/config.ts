@@ -1,11 +1,11 @@
 'use client';
 
-// Configuración real para el proyecto studio-1244576952-ef87c
+
 export const firebaseConfig = {
-  apiKey: "AIzaSyD-fake-key-for-studio-1244576952-ef87c",
+  apiKey: "AIzaSyCYzWSXh_Pt47b004BvIY7IeU8lYEgiRwE",
   authDomain: "studio-1244576952-ef87c.firebaseapp.com",
   projectId: "studio-1244576952-ef87c",
-  storageBucket: "studio-1244576952-ef87c.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef1234567890"
+  storageBucket: "studio-1244576952-ef87c.firebasestorage.app",
+  messagingSenderId: "145992112791",
+  appId: "1:145992112791:web:a1b81fbf6b23770ed0e7d2"
 };
