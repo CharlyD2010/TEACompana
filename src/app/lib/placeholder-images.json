@@ -1,0 +1,41 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "avatar-boy",
+      "description": "Avatar of a happy boy",
+      "imageUrl": "https://picsum.photos/seed/boy/200/200",
+      "imageHint": "child boy"
+    },
+    {
+      "id": "avatar-girl",
+      "description": "Avatar of a happy girl",
+      "imageUrl": "https://picsum.photos/seed/girl/200/200",
+      "imageHint": "child girl"
+    },
+    {
+      "id": "game-emotions",
+      "description": "Illustration of different emotions",
+      "imageUrl": "https://picsum.photos/seed/emotions/400/300",
+      "imageHint": "emotions faces"
+    },
+    {
+      "id": "game-colors",
+      "description": "Colorful geometric shapes",
+      "imageUrl": "https://picsum.photos/seed/shapes/400/300",
+      "imageHint": "colorful shapes"
+    },
+    {
+      "id": "game-counting",
+      "description": "Counting objects illustration",
+      "imageUrl": "https://picsum.photos/seed/counting/400/300",
+      "imageHint": "counting numbers"
+    },
+    {
+      "id": "game-routines",
+      "description": "Daily routine illustration",
+      "imageUrl": "https://picsum.photos/seed/routines/400/300",
+      "imageHint": "daily routine"
+    }
+  ]
+}
