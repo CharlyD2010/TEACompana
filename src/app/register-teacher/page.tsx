@@ -1,11 +1,10 @@
+
 'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppButton, AppInput, AppCard, AppHeader } from '@/components/app-components';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/config/firebase';
+import { authService } from '@/services/authService';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -28,15 +27,8 @@ export default function RegisterTeacherPage() {
 
     setLoading(true);
     try {
-      const { user } = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        fullName: formData.fullName,
-        email: formData.email,
-        role: 'teacher',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      });
+      await authService.registerTeacher(formData.email, formData.password, formData.fullName);
+      toast({ title: "Registro exitoso", description: "Bienvenido, profesor" });
       router.push('/children');
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error en el registro", description: error.message });

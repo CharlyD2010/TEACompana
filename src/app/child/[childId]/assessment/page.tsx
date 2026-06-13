@@ -6,9 +6,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { AppHeader, AppCard, AppButton, ProgressBar } from '@/components/app-components';
 import { Slider } from '@/components/ui/slider';
 import { useFirestore, useUser } from '@/firebase';
-import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
-import { generateLearningPlan } from '@/ai/flows/generate-personalized-learning-plan';
 
 const AREAS = [
   { id: 'emociones', label: 'Emociones', desc: 'Capacidad para reconocer y expresar sentimientos.' },
@@ -61,7 +60,7 @@ export default function AssessmentPage() {
           createdAt: new Date().toISOString(),
         });
 
-        // Trigger AI plan generation (optional: we can do it in the next page or now)
+        // Al finalizar, el plan de aprendizaje se generará automáticamente en la siguiente pantalla
         router.push(`/child/${childId}/learning-plan`);
       } catch (e: any) {
         toast({ variant: "destructive", title: "Error al guardar", description: e.message });

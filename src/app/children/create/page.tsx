@@ -53,8 +53,20 @@ export default function CreateChildPage() {
         stars: 0,
         createdAt: new Date().toISOString(),
       });
+
+      // Crear registro de acceso
+      const accessId = Math.random().toString(36).substr(2, 9);
+      await setDoc(doc(db, 'child_access', accessId), {
+        id: accessId,
+        childId,
+        userId: user.uid,
+        role: 'owner',
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      });
+
       toast({ title: "Perfil creado con éxito" });
-      router.push('/children');
+      router.push(`/child/${childId}/dashboard`);
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error al guardar", description: e.message });
     } finally {

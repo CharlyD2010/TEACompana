@@ -81,7 +81,7 @@ export default function GamePlayPage() {
       createdAt: new Date().toISOString(),
     });
 
-    // Update totals
+    // Actualizar totales en el perfil del niño
     const childRef = doc(db, 'children', childId as string);
     await updateDoc(childRef, {
       points: increment(finalCorrect * 10),

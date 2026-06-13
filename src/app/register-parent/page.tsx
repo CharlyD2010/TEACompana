@@ -1,11 +1,10 @@
+
 'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppButton, AppInput, AppCard, AppHeader } from '@/components/app-components';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/config/firebase';
+import { authService } from '@/services/authService';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -22,15 +21,8 @@ export default function RegisterParentPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { user } = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        fullName: formData.fullName,
-        email: formData.email,
-        role: 'parent',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      });
+      await authService.registerParent(formData.email, formData.password, formData.fullName);
+      toast({ title: "Registro exitoso", description: "Bienvenido a TEACompaña" });
       router.push('/children');
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error en el registro", description: error.message });

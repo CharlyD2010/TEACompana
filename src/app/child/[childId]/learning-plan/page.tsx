@@ -26,7 +26,7 @@ export default function LearningPlanPage() {
 
   useEffect(() => {
     if (child && assessments?.length > 0) {
-      // Check if we already have a plan for this assessment or generate new one
+      // Intentar cargar el último plan o generar uno nuevo si no existe
       generatePlan(child, assessments[0]);
     }
   }, [child, assessments]);
@@ -43,7 +43,7 @@ export default function LearningPlanPage() {
       });
       setPlan(result);
       
-      // Save plan to Firestore
+      // Guardar plan en Firestore
       const planId = Math.random().toString(36).substr(2, 9);
       await setDoc(doc(db!, 'children', childId as string, 'learning_plans', planId), {
         ...result,
@@ -128,3 +128,12 @@ export default function LearningPlanPage() {
     </div>
   );
 }
+
+// Icono Target faltante (usando inline SVG para evitar errores de Lucide)
+const Target = ({ className }: { className?: string }) => (
+  <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="6" />
+    <circle cx="12" cy="12" r="2" />
+  </svg>
+);
