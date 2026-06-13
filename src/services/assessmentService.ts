@@ -1,12 +1,12 @@
 'use client';
 
-import { collection, doc, setDoc, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { collection, doc, setDoc, query, orderBy, limit, getDocs, Firestore } from 'firebase/firestore';
 
 export const assessmentService = {
-  saveAssessment: async (childId: string, conductedBy: string, scores: any, notes: string = '') => {
+  saveAssessment: async (db: Firestore, childId: string, conductedBy: string, scores: any, notes: string = '') => {
     const id = Math.random().toString(36).substr(2, 9);
-    const ref = doc(db, 'initial_assessments', id);
+    // Ruta corregida a subcolección según reglas
+    const ref = doc(db, 'children', childId, 'assessments', id);
     const assessment = {
       id,
       childId,
@@ -19,10 +19,9 @@ export const assessmentService = {
     return assessment;
   },
 
-  getLatestAssessment: async (childId: string) => {
+  getLatestAssessment: async (db: Firestore, childId: string) => {
     const q = query(
-      collection(db, 'initial_assessments'), 
-      where('childId', '==', childId),
+      collection(db, 'children', childId, 'assessments'), 
       orderBy('createdAt', 'desc'),
       limit(1)
     );

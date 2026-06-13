@@ -17,6 +17,12 @@ service cloud.firestore {
       let accessPath = /databases/$(database)/documents/child_access/$(request.auth.uid + "_" + childId);
       return exists(accessPath) && get(accessPath).data.isActive == true;
     }
+
+    // Verifica si el usuario es el creador del documento del niño
+    function isCreator(childId) {
+      let childPath = /databases/$(database)/documents/children/$(childId);
+      return exists(childPath) && get(childPath).data.createdBy == request.auth.uid;
+    }
     
     // Reglas para Perfiles de Usuario
     match /users/{userId} {
@@ -26,7 +32,6 @@ service cloud.firestore {
     // Reglas para Relaciones de Acceso
     match /child_access/{accessId} {
       allow read: if isLoggedIn() && resource.data.userId == request.auth.uid;
-      // El cliente puede crear el registro determinista al crear el niño
       allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if false; 
     }
@@ -37,17 +42,17 @@ service cloud.firestore {
       allow read, write: if isLoggedIn() && (resource == null || resource.data.createdBy == request.auth.uid || hasAccess(childId));
       
       // Subcolecciones protegidas por el acceso al niño
-      match /assessments/{id} { allow read, write: if isLoggedIn() && hasAccess(childId); }
-      match /learning_plans/{id} { allow read, write: if isLoggedIn() && hasAccess(childId); }
-      match /game_sessions/{id} { allow read, write: if isLoggedIn() && hasAccess(childId); }
-      match /game_progress/{id} { allow read, write: if isLoggedIn() && hasAccess(childId); }
-      match /child_rewards/{id} { allow read, write: if isLoggedIn() && hasAccess(childId); }
+      // Se permite acceso si es el creador del perfil del niño o tiene un registro en child_access
+      match /assessments/{id} { allow read, write: if isLoggedIn() && (isCreator(childId) || hasAccess(childId)); }
+      match /learning_plans/{id} { allow read, write: if isLoggedIn() && (isCreator(childId) || hasAccess(childId)); }
+      match /game_sessions/{id} { allow read, write: if isLoggedIn() && (isCreator(childId) || hasAccess(childId)); }
+      match /game_progress/{id} { allow read, write: if isLoggedIn() && (isCreator(childId) || hasAccess(childId)); }
+      match /child_rewards/{id} { allow read, write: if isLoggedIn() && (isCreator(childId) || hasAccess(childId)); }
     }
     
     // Reglas para el catálogo de Recompensas (Metadata)
     match /rewards/{rewardId} {
       allow read: if isLoggedIn();
-      // Solo administradores pueden escribir (gestión manual en consola)
       allow write: if false;
     }
   }

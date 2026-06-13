@@ -1,18 +1,19 @@
 'use client';
 
-import { collection, doc, setDoc, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { collection, doc, setDoc, getDocs, query, getDoc, Firestore } from 'firebase/firestore';
 
 export const rewardService = {
-  getChildRewards: async (childId: string) => {
-    const q = query(collection(db, 'child_rewards'), where('childId', '==', childId));
+  getChildRewards: async (db: Firestore, childId: string) => {
+    // Ruta corregida a subcolección según reglas
+    const q = collection(db, 'children', childId, 'child_rewards');
     const snap = await getDocs(q);
     return snap.docs.map(d => d.data());
   },
 
-  awardReward: async (childId: string, rewardId: string) => {
+  awardReward: async (db: Firestore, childId: string, rewardId: string) => {
     const id = `${childId}_${rewardId}`;
-    const ref = doc(db, 'child_rewards', id);
+    // Ruta corregida a subcolección según reglas
+    const ref = doc(db, 'children', childId, 'child_rewards', id);
     const snap = await getDoc(ref);
     if (!snap.exists()) {
       await setDoc(ref, {
