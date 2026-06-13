@@ -1,23 +1,46 @@
-
 'use client';
 
 import React from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { AppHeader, AppCard, AppButton, ProgressBar } from '@/components/app-components';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Play, ClipboardList, BookOpen, BarChart3, Trophy, Clock, Target, Loader2 } from 'lucide-react';
-import { useDoc, useFirestore } from '@/firebase';
+import { Play, ClipboardList, BookOpen, BarChart3, Trophy, Target, Loader2, AlertCircle } from 'lucide-react';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 export default function ChildDashboardPage() {
   const router = useRouter();
   const { childId } = useParams();
   const db = useFirestore();
+  const { user, loading: userLoading } = useUser();
   
-  const { data: child, loading } = useDoc(doc(db!, 'children', childId as string));
+  const { data: child, loading: childLoading, error } = useDoc(
+    db && childId ? doc(db, 'children', childId as string) : null
+  );
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
-  if (!child) return <div>No se encontró el niño.</div>;
+  if (userLoading || childLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    router.push('/');
+    return null;
+  }
+
+  if (error || !child) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <AlertCircle className="w-16 h-16 text-destructive" />
+        <h2 className="text-2xl font-black">Niño no encontrado</h2>
+        <p className="text-muted-foreground">No pudimos encontrar el perfil solicitado o no tienes acceso.</p>
+        <AppButton onClick={() => router.push('/children')}>Volver a Mis Niños</AppButton>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -49,7 +72,7 @@ export default function ChildDashboardPage() {
             </div>
             <div className="text-center">
               <div className="text-2xl font-black">0</div>
-              <div className="text-[10px] opacity-80 uppercase font-bold">Sesiones</div>
+              <div className="text-[10px] opacity-80 uppercase font-bold">Logros</div>
             </div>
           </div>
         </AppCard>
@@ -69,16 +92,14 @@ export default function ChildDashboardPage() {
             <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase">
               <Target className="w-4 h-4" /> Progreso
             </div>
-            <ProgressBar value={15} />
-            <div className="text-xs text-muted-foreground font-bold">15% Completado</div>
+            <ProgressBar value={10} />
+            <div className="text-xs text-muted-foreground font-bold">10% Completado</div>
           </AppCard>
           <AppCard className="p-4 bg-white space-y-3" onClick={() => router.push(`/child/${childId}/rewards`)}>
             <div className="flex items-center gap-2 text-accent-foreground font-bold text-sm uppercase">
-              <Trophy className="w-4 h-4" /> Logros
+              <Trophy className="w-4 h-4" /> Recompensas
             </div>
-            <div className="flex gap-1">
-              <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-[10px] font-bold">1</div>
-            </div>
+            <div className="text-xs text-muted-foreground font-bold">Ver medallas</div>
           </AppCard>
         </div>
 
@@ -106,7 +127,7 @@ export default function ChildDashboardPage() {
               <div className="w-10 h-10 bg-secondary/20 rounded-xl flex items-center justify-center text-secondary-foreground">
                 <BarChart3 />
               </div>
-              <span className="font-bold">Reportes y Progreso</span>
+              <span className="font-bold">Reportes de Avance</span>
             </div>
           </AppButton>
         </div>

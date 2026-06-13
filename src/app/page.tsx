@@ -1,24 +1,33 @@
-
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppButton, AppInput, AppCard } from '@/components/app-components';
 import { Heart, Loader2 } from 'lucide-react';
 import { authService } from '@/services/authService';
 import { toast } from '@/hooks/use-toast';
+import { useUser } from '@/firebase';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Redirigir si ya está autenticado
+  useEffect(() => {
+    if (user && !authLoading) {
+      router.push('/children');
+    }
+  }, [user, authLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await authService.login(email, password);
+      toast({ title: "Bienvenido", description: "Sesión iniciada correctamente." });
       router.push('/children');
     } catch (error: any) {
       toast({
@@ -30,6 +39,8 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">

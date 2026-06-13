@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -19,15 +18,20 @@ export default function MyChildrenPage() {
   useEffect(() => {
     async function loadChildren() {
       if (user) {
-        const data = await childrenService.getChildrenForUser(user.uid);
-        setChildren(data);
+        try {
+          const data = await childrenService.getChildrenForUser(user.uid);
+          setChildren(data);
+        } catch (e) {
+          console.error("Error loading children", e);
+        } finally {
+          setLoading(false);
+        }
+      } else if (!userLoading) {
+        router.push('/');
       }
-      setLoading(false);
     }
-    if (!userLoading) {
-      loadChildren();
-    }
-  }, [user, userLoading]);
+    loadChildren();
+  }, [user, userLoading, router]);
 
   const handleLogout = async () => {
     await authService.logout();
@@ -52,7 +56,7 @@ export default function MyChildrenPage() {
 
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <p className="text-muted-foreground font-medium">Selecciona un perfil para continuar</p>
+          <p className="text-muted-foreground font-medium">Selecciona un perfil</p>
           <AppButton size="sm" onClick={() => router.push('/children/create')} className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
             <Plus className="w-4 h-4 mr-1" /> Nuevo
           </AppButton>
@@ -63,7 +67,7 @@ export default function MyChildrenPage() {
             <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <User className="w-10 h-10 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-bold text-muted-foreground mb-2">No tienes niños registrados</h3>
+            <h3 className="text-xl font-bold text-muted-foreground mb-4">No tienes niños registrados</h3>
             <AppButton onClick={() => router.push('/children/create')}>
               Agregar mi primer niño
             </AppButton>
