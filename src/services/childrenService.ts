@@ -25,10 +25,12 @@ export const childrenService = {
       stars: 0,
     };
 
+    // 1. Crear el perfil del niño
     await setDoc(childRef, newChild);
 
-    // Relación de acceso
-    const accessId = Math.random().toString(36).substr(2, 9);
+    // 2. Crear relación de acceso DETERMINISTA (userId_childId)
+    // Esto es CRÍTICO para que las Security Rules funcionen con exists()
+    const accessId = `${userId}_${childId}`;
     await setDoc(doc(db, 'child_access', accessId), {
       id: accessId,
       childId,
@@ -42,8 +44,12 @@ export const childrenService = {
   },
 
   getChildrenForUser: async (userId: string) => {
-    // Primero buscar en child_access los IDs de los niños
-    const accessQuery = query(collection(db, 'child_access'), where('userId', '==', userId), where('isActive', '==', true));
+    // Buscar en child_access los IDs de los niños asociados al usuario
+    const accessQuery = query(
+      collection(db, 'child_access'), 
+      where('userId', '==', userId), 
+      where('isActive', '==', true)
+    );
     const accessSnap = await getDocs(accessQuery);
     const childIds = accessSnap.docs.map(d => d.data().childId);
 

@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Funciones de utilidad
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Verifica si el usuario tiene una relación activa con el niño
+    // Basado en el ID determinista: userId_childId
+    function hasAccess(childId) {
+      let accessPath = /databases/$(database)/documents/child_access/$(request.auth.uid + "_" + childId);
+      return exists(accessPath) && get(accessPath).data.isActive == true;
+    }
+    
+    // Reglas para Perfiles de Usuario
+    match /users/{userId} {
+      allow read, write: if isLoggedIn() && isOwner(userId);
+    }
+    
+    // Reglas para Relaciones de Acceso
+    match /child_access/{accessId} {
+      allow read: if isLoggedIn() && resource.data.userId == request.auth.uid;
+      // Solo el sistema o procesos controlados crean accesos (aquí permitimos si es el creador del registro)
+      allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; 
+    }
+    
+    // Reglas para Niños y sus Subcolecciones
+    match /children/{childId} {
+      // Un usuario puede leer/escribir si es el creador o tiene acceso concedido
+      allow read, write: if isLoggedIn() && (resource == null || resource.data.createdBy == request.auth.uid || hasAccess(childId));
+      
+      // Subcolecciones protegidas por el acceso al niño
+      match /assessments/{id} { allow read, write: if isLoggedIn() && hasAccess(childId); }
+      match /learning_plans/{id} { allow read, write: if isLoggedIn() && hasAccess(childId); }
+      match /game_sessions/{id} { allow read, write: if isLoggedIn() && hasAccess(childId); }
+      match /game_progress/{id} { allow read, write: if isLoggedIn() && hasAccess(childId); }
+      match /child_rewards/{id} { allow read, write: if isLoggedIn() && hasAccess(childId); }
+    }
+    
+    // Reglas para el catálogo de Recompensas (Metadata)
+    match /rewards/{rewardId} {
+      allow read: if isLoggedIn();
+      // Solo administradores pueden crear/editar recompensas generales
+      allow write: if isLoggedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}
