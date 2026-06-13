@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -6,14 +5,12 @@ import { useRouter } from 'next/navigation';
 import { AppButton, AppInput, AppCard, AppHeader } from '@/components/app-components';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { useAuth, useFirestore } from '@/firebase';
+import { auth, db } from '@/config/firebase';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 export default function RegisterParentPage() {
   const router = useRouter();
-  const auth = useAuth();
-  const db = useFirestore();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -23,8 +20,6 @@ export default function RegisterParentPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !db) return;
-
     setLoading(true);
     try {
       const { user } = await createUserWithEmailAndPassword(auth, formData.email, formData.password);

@@ -1,25 +1,21 @@
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppButton, AppInput, AppCard } from '@/components/app-components';
 import { Heart, Loader2 } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { useAuth } from '@/firebase';
+import { auth } from '@/config/firebase';
 import { toast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
   const router = useRouter();
-  const auth = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth) return;
-    
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
