@@ -1,9 +1,7 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Funciones de utilidad
     function isLoggedIn() {
       return request.auth != null;
     }
@@ -16,70 +14,63 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
     
-    // Verifica si el usuario tiene una relación activa con el niño mediante child_access
     function hasAccess(childId) {
       let accessPath = /databases/$(database)/documents/child_access/$(request.auth.uid + "_" + childId);
       return exists(accessPath) && get(accessPath).data.isActive == true;
     }
 
-    // Verifica si el usuario es el creador del documento del niño
     function isCreator(childId) {
       let childPath = /databases/$(database)/documents/children/$(childId);
       return exists(childPath) && get(childPath).data.createdBy == request.auth.uid;
     }
     
-    // Verifica si el docente tiene acceso institucional al niño
-    // Permite lectura si es docente y coincide la institución
     function isTeacherOfInstitution(institutionId) {
       let userData = getUserData();
       return userData.role == 'teacher' && userData.institutionId == institutionId;
     }
+
+    function canAccessChildData(childId) {
+      let childData = get(/databases/$(database)/documents/children/$(childId)).data;
+      return childData.createdBy == request.auth.uid || 
+             hasAccess(childId) || 
+             isTeacherOfInstitution(childData.institutionId);
+    }
     
-    // Reglas para Perfiles de Usuario
     match /users/{userId} {
       allow read: if isLoggedIn();
       allow write: if isLoggedIn() && isOwner(userId);
     }
     
-    // Reglas para Relaciones de Acceso
     match /child_access/{accessId} {
-      allow read: if isLoggedIn() && (resource.data.userId == request.auth.uid || isOwner(accessId.split('_')[0]));
+      allow read: if isLoggedIn() && (resource.data.userId == request.auth.uid || accessId.split('_')[0] == request.auth.uid);
       allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if false; 
     }
     
-    // Reglas para Niños y sus Subcolecciones
     match /children/{childId} {
-      // Lectura permitida si es creador, tiene acceso o es docente de la institución
       allow read: if isLoggedIn() && (
         (resource != null && resource.data.createdBy == request.auth.uid) || 
         hasAccess(childId) || 
         (resource != null && isTeacherOfInstitution(resource.data.institutionId)) ||
-        (resource == null) // Para creación
+        (resource == null)
       );
       
-      // Escritura permitida si es creador, tiene acceso o es docente institucional
       allow write: if isLoggedIn() && (
         (resource == null) || 
         resource.data.createdBy == request.auth.uid || 
         hasAccess(childId) ||
-        isTeacherOfInstitution(resource.data.institutionId)
+        isTeacherOfInstitution(getUserData().institutionId)
       );
       
-      // Subcolecciones protegidas
-      // Se permite acceso si el usuario tiene permiso sobre el documento padre (niño)
-      function canAccessChildData(childId) {
-        let childData = get(/databases/$(database)/documents/children/$(childId)).data;
-        return childData.createdBy == request.auth.uid || 
-               hasAccess(childId) || 
-               isTeacherOfInstitution(childData.institutionId);
-      }
-
       match /assessments/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
       match /learning_plans/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
       match /game_sessions/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
       match /game_progress/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
       match /child_rewards/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
+      match /teacher_observations/{id} { 
+        allow read: if isLoggedIn() && canAccessChildData(childId);
+        allow write: if isLoggedIn() && getUserData().role == 'teacher' && isTeacherOfInstitution(get(/databases/$(database)/documents/children/$(childId)).data.institutionId);
+      }
     }
     
     match /rewards/{rewardId} {

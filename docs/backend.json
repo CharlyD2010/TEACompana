@@ -74,28 +74,26 @@
         "priorityAreas": { "type": "array", "items": { "type": "string" } },
         "weeklyGoals": { "type": "array", "items": { "type": "string" } },
         "recommendedActivities": { "type": "array", "items": { "type": "string" } },
-        "parentSuggestions": { "type": "array", "items": { "type": "string" } },
-        "teacherSuggestions": { "type": "array", "items": { "type": "string" } },
+        "suggestionsForParents": { "type": "array", "items": { "type": "string" } },
+        "suggestionsForTeachers": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string", "format": "date-time" }
       }
     },
-    "GameSession": {
-      "title": "Game Session",
-      "description": "Recording of a game activity",
+    "TeacherObservation": {
+      "title": "Teacher Observation",
+      "description": "Observation or recommendation from a teacher to a parent",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "childId": { "type": "string" },
-        "gameId": { "type": "string" },
-        "userId": { "type": "string" },
-        "score": { "type": "number" },
-        "stars": { "type": "number" },
-        "correctAnswers": { "type": "number" },
-        "incorrectAnswers": { "type": "number" },
-        "accuracy": { "type": "number" },
-        "durationSeconds": { "type": "number" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
+        "teacherId": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "message": { "type": "string" },
+        "recommendationType": { "type": "string", "enum": ["progreso", "conducta", "actividad", "seguimiento"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "visibleToParent": { "type": "boolean" }
+      },
+      "required": ["id", "childId", "teacherId", "teacherName", "message", "recommendationType"]
     }
   },
   "auth": {
@@ -118,9 +116,9 @@
       "schema": "LearningPlan",
       "description": "Learning plans per child"
     },
-    "/children/{childId}/game_sessions/{sessionId}": {
-      "schema": "GameSession",
-      "description": "Activity history per child"
+    "/children/{childId}/teacher_observations/{obsId}": {
+      "schema": "TeacherObservation",
+      "description": "Teacher observations for a child"
     }
   }
 }

@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppHeader, AppCard, AppButton, LoadingState, EmptyState } from '@/components/app-components';
 import { generateLearningPlan, GenerateLearningPlanOutput } from '@/ai/flows/generate-personalized-learning-plan';
@@ -37,8 +36,47 @@ export default function LearningPlanPage() {
 
   const [generating, setGenerating] = useState(false);
 
+  // Fallback plan in case AI fails
+  const generateFallbackPlan = (childData: any, assessmentScores: any): GenerateLearningPlanOutput => {
+    const areas = [
+      { id: 'emociones', label: 'Emociones', score: assessmentScores.emociones },
+      { id: 'comunicacion', label: 'Comunicación', score: assessmentScores.comunicacion },
+      { id: 'social', label: 'Social', score: assessmentScores.social },
+      { id: 'cognitivo', label: 'Cognitivo', score: assessmentScores.cognitivo },
+      { id: 'motricidad', label: 'Motricidad', score: assessmentScores.motricidad },
+      { id: 'rutinas', label: 'Rutinas', score: assessmentScores.rutinas },
+    ];
+
+    const sortedAreas = [...areas].sort((a, b) => a.score - b.score);
+    const priorityAreas = sortedAreas.slice(0, 3).map(a => a.label);
+
+    return {
+      priorityAreas,
+      weeklyGoals: [
+        `Fortalecer el área de ${priorityAreas[0]} mediante juegos diarios.`,
+        `Fomentar la interacción positiva centrada en ${childData.interests?.[0] || 'sus intereses'}.`,
+        "Establecer una rutina visual consistente para las mañanas."
+      ],
+      recommendedActivities: [
+        `Actividad de ${priorityAreas[0]}: Sesión visual de 15 minutos.`,
+        `Juego compartido basado en ${childData.interests?.[1] || 'música'}.`,
+        "Uso de pictogramas para comunicar necesidades básicas."
+      ],
+      suggestionsForParents: [
+        "Mantener contacto visual durante las instrucciones breves.",
+        "Reforzar positivamente cada pequeño avance con elogios.",
+        "Limitar el tiempo de pantalla antes de dormir."
+      ],
+      suggestionsForTeachers: [
+        "Proporcionar un espacio tranquilo para descansos sensoriales.",
+        "Utilizar apoyos visuales para las transiciones entre materias.",
+        "Simplificar las instrucciones a pasos individuales."
+      ]
+    };
+  };
+
   async function handleGeneratePlan() {
-    if (!child || !assessments || assessments.length === 0 || !db) return;
+    if (!child || !assessments || assessments.length === 0 || !db || !user) return;
     
     setGenerating(true);
     try {
@@ -52,11 +90,11 @@ export default function LearningPlanPage() {
           learningStyle: child.learningStyle,
           assessmentResults: assessments[0].scores,
         });
-        toast({ title: "Plan generado con éxito" });
+        toast({ title: "Plan generado con IA" });
       } catch (aiErr) {
         console.warn("AI Plan failed, using local fallback", aiErr);
-        // Fallback local logic could be here if needed
-        throw aiErr;
+        result = generateFallbackPlan(child, assessments[0].scores);
+        toast({ title: "Plan generado (Modo compatible)" });
       }
       
       const planId = Math.random().toString(36).substr(2, 9);
@@ -64,12 +102,13 @@ export default function LearningPlanPage() {
         ...result,
         id: planId,
         childId,
+        createdBy: user.uid,
         createdAt: new Date().toISOString(),
       });
       
     } catch (err) {
       console.error(err);
-      toast({ variant: "destructive", title: "Error", description: "No se pudo generar el plan." });
+      toast({ variant: "destructive", title: "Error", description: "No se pudo guardar el plan." });
     } finally {
       setGenerating(false);
     }
@@ -95,7 +134,7 @@ export default function LearningPlanPage() {
     );
   }
 
-  const localPlan = plans?.[0] as unknown as GenerateLearningPlanOutput | undefined;
+  const localPlan = plans?.[0] as any;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -113,13 +152,13 @@ export default function LearningPlanPage() {
                 <Sparkles className="w-5 h-5 fill-accent text-accent" />
                 <h3 className="text-lg font-black uppercase tracking-wider">Plan para {child?.name}</h3>
               </div>
-              <p className="text-sm opacity-90 font-medium italic">"Recomendaciones personalizadas basadas en el perfil actual."</p>
+              <p className="text-sm opacity-90 font-medium italic">"Actualizado el {new Date(localPlan.createdAt).toLocaleDateString()}"</p>
             </AppCard>
 
             <section className="space-y-3">
               <h4 className="flex items-center gap-2 font-black text-primary uppercase text-[10px] tracking-widest">Áreas Prioritarias</h4>
               <div className="flex flex-wrap gap-2">
-                {localPlan.priorityAreas.map((area, i) => (
+                {localPlan.priorityAreas.map((area: string, i: number) => (
                   <span key={i} className="px-3 py-1 bg-white rounded-full text-[10px] font-black uppercase border-2 border-primary/20 text-primary">{area}</span>
                 ))}
               </div>
@@ -128,7 +167,7 @@ export default function LearningPlanPage() {
             <section className="space-y-4">
               <h4 className="flex items-center gap-2 font-black text-secondary-foreground uppercase text-[10px] tracking-widest">Objetivos Semanales</h4>
               <div className="grid gap-3">
-                {localPlan.weeklyGoals.map((goal, i) => (
+                {localPlan.weeklyGoals.map((goal: string, i: number) => (
                   <AppCard key={i} className="p-4 bg-white/60 border-l-8 border-l-secondary shadow-sm">
                     <p className="text-sm font-bold text-secondary-foreground">{goal}</p>
                   </AppCard>
@@ -139,7 +178,7 @@ export default function LearningPlanPage() {
             <section className="space-y-4">
               <h4 className="flex items-center gap-2 font-black text-accent-foreground uppercase text-[10px] tracking-widest">Actividades Sugeridas</h4>
               <div className="grid gap-3">
-                {localPlan.recommendedActivities.map((activity, i) => (
+                {localPlan.recommendedActivities.map((activity: string, i: number) => (
                   <AppCard key={i} className="p-4 bg-accent/10 border-none flex items-center gap-3">
                     <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0 text-accent-foreground font-black text-xs">{i+1}</div>
                     <p className="text-sm font-bold">{activity}</p>
@@ -147,6 +186,30 @@ export default function LearningPlanPage() {
                 ))}
               </div>
             </section>
+
+            <AppCard className="p-6 bg-white space-y-8">
+               <div className="space-y-4">
+                <h4 className="flex items-center gap-2 font-black text-primary uppercase text-[10px] tracking-widest">Para Padres</h4>
+                <ul className="space-y-3">
+                  {localPlan.suggestionsForParents.map((s: string, i: number) => (
+                    <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                      <span className="text-primary font-black">•</span> {s}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="h-px bg-muted"></div>
+              <div className="space-y-4">
+                <h4 className="flex items-center gap-2 font-black text-secondary-foreground uppercase text-[10px] tracking-widest">Para Docentes</h4>
+                <ul className="space-y-3">
+                  {localPlan.suggestionsForTeachers.map((s: string, i: number) => (
+                    <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                      <span className="text-secondary-foreground font-black">•</span> {s}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </AppCard>
 
             <div className="grid gap-4">
               <AppButton className="w-full h-16 text-lg" onClick={() => router.push(`/child/${childId}/child-mode`)}>

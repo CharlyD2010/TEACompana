@@ -1,11 +1,10 @@
-
 'use client';
 
 import React from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { AppHeader, AppCard, AppButton, ProgressBar } from '@/components/app-components';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Play, ClipboardList, BookOpen, BarChart3, Trophy, Target, Loader2, AlertCircle, School, Users, Settings, LogOut } from 'lucide-react';
+import { Play, ClipboardList, BookOpen, BarChart3, Trophy, Target, Loader2, AlertCircle, School, Users, Settings, LogOut, MessageSquare } from 'lucide-react';
 import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { authService } from '@/services/authService';
@@ -151,9 +150,18 @@ export default function ChildDashboardPage() {
             </div>
           </AppButton>
 
-          <AppButton variant="outline" className="justify-between h-16 bg-white border-none shadow-sm" onClick={() => router.push(`/child/${childId}/reports`)}>
+          <AppButton variant="outline" className="justify-between h-16 bg-white border-none shadow-sm" onClick={() => router.push(`/child/${childId}/observations`)}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-secondary/20 rounded-xl flex items-center justify-center text-secondary-foreground">
+                <MessageSquare />
+              </div>
+              <span className="font-bold">Observaciones</span>
+            </div>
+          </AppButton>
+
+          <AppButton variant="outline" className="justify-between h-16 bg-white border-none shadow-sm" onClick={() => router.push(`/child/${childId}/reports`)}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-muted rounded-xl flex items-center justify-center text-muted-foreground">
                 <BarChart3 />
               </div>
               <span className="font-bold">Reportes de Avance</span>
