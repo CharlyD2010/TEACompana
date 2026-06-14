@@ -3,8 +3,8 @@
 
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AppCard, AppButton, StarRating } from '@/components/app-components';
-import { ArrowLeft, Smile, Shapes, Hash, CalendarDays, Book, Lock, Loader2 } from 'lucide-react';
+import { AppCard, AppButton, AppHeader } from '@/components/app-components';
+import { Smile, Shapes, Hash, Book, Loader2, LayoutDashboard, Users } from 'lucide-react';
 import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
@@ -30,15 +30,16 @@ export default function ActivitiesPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="p-6 bg-white flex items-center justify-between shadow-sm rounded-b-[2rem] sticky top-0 z-50">
-        <AppButton variant="ghost" size="icon" onClick={() => router.push(`/child/${childId}/child-mode`)} className="rounded-full">
-          <ArrowLeft className="h-6 w-6" />
-        </AppButton>
-        <h1 className="text-xl font-black text-primary uppercase tracking-tight">Actividades</h1>
-        <div className="w-10 h-10 bg-accent rounded-full flex items-center justify-center font-black text-xs">
+      <AppHeader 
+        title="Actividades" 
+        showBackToDashboard={true} 
+        showBackToChildren={true}
+        childId={childId as string}
+      >
+        <div className="w-10 h-10 bg-accent rounded-full flex items-center justify-center font-black text-xs shadow-sm">
           {child?.points || 0}
         </div>
-      </div>
+      </AppHeader>
 
       <div className="p-6 space-y-6">
         <div className="grid gap-6">
@@ -57,15 +58,23 @@ export default function ActivitiesPage() {
                   <div className="flex-1 p-4">
                     <h3 className="font-black text-lg uppercase text-primary">{game.name}</h3>
                     <p className="text-xs text-muted-foreground mt-1">{game.desc}</p>
-                    <div className="mt-4 flex justify-between items-center">
-                      <StarRating rating={0} max={3} />
-                      <AppButton size="sm" className="h-7 px-3 text-[10px] font-black">Jugar</AppButton>
+                    <div className="mt-4 flex justify-end">
+                      <AppButton size="sm" className="h-8 px-4 text-[10px] font-black uppercase">Jugar</AppButton>
                     </div>
                   </div>
                 </div>
               </AppCard>
             );
           })}
+        </div>
+
+        <div className="pt-8 flex flex-col gap-3">
+          <AppButton variant="outline" className="w-full h-14 font-black uppercase text-xs gap-2" onClick={() => router.push(`/child/${childId}/dashboard`)}>
+            <LayoutDashboard className="w-4 h-4" /> Volver al Dashboard
+          </AppButton>
+          <AppButton variant="ghost" className="w-full h-12 text-muted-foreground font-black uppercase text-[10px]" onClick={() => router.push('/children')}>
+            <Users className="w-3 h-3 mr-1" /> Mis Niños
+          </AppButton>
         </div>
       </div>
     </div>

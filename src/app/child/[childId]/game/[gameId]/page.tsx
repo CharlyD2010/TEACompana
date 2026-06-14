@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppButton } from '@/components/app-components';
-import { CheckCircle2, XCircle, Loader2, X, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, X, LayoutDashboard, Users, BookOpen } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -177,14 +177,30 @@ export default function GamePlayPage() {
                   El progreso de esta partida no se guardará si sales ahora.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="rounded-full font-black uppercase text-xs">Continuar jugando</AlertDialogCancel>
-                <AlertDialogAction 
-                  className="rounded-full font-black uppercase text-xs bg-destructive text-destructive-foreground"
-                  onClick={() => router.push(`/child/${childId}/activities`)}
-                >
-                  Salir del juego
-                </AlertDialogAction>
+              <AlertDialogFooter className="flex flex-col gap-2">
+                <div className="flex gap-2 w-full">
+                  <AlertDialogCancel className="flex-1 rounded-full font-black uppercase text-[10px]">Continuar jugando</AlertDialogCancel>
+                </div>
+                <div className="grid grid-cols-1 gap-2 w-full">
+                  <AlertDialogAction 
+                    className="w-full rounded-full font-black uppercase text-[10px] bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
+                    onClick={() => router.push(`/child/${childId}/activities`)}
+                  >
+                    <BookOpen className="w-3 h-3" /> Salir a Actividades
+                  </AlertDialogAction>
+                  <AlertDialogAction 
+                    className="w-full rounded-full font-black uppercase text-[10px] bg-secondary text-secondary-foreground hover:bg-secondary/90 gap-2"
+                    onClick={() => router.push(`/child/${childId}/dashboard`)}
+                  >
+                    <LayoutDashboard className="w-3 h-3" /> Salir al Dashboard
+                  </AlertDialogAction>
+                  <AlertDialogAction 
+                    className="w-full rounded-full font-black uppercase text-[10px] bg-destructive text-white hover:bg-destructive/90 gap-2"
+                    onClick={() => router.push('/children')}
+                  >
+                    <Users className="w-3 h-3" /> Salir a Mis Niños
+                  </AlertDialogAction>
+                </div>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

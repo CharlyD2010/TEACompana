@@ -4,7 +4,7 @@
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppCard, AppButton } from '@/components/app-components';
-import { ShieldCheck, ArrowRight, X, Loader2 } from 'lucide-react';
+import { ShieldCheck, ArrowRight, X, Loader2, LayoutDashboard, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
@@ -58,6 +58,15 @@ export default function ChildModeGateway() {
           COMENZAR ACTIVIDADES
           <ArrowRight className="w-6 h-6" />
         </AppButton>
+
+        <div className="flex flex-col gap-2 w-full max-w-sm">
+          <AppButton variant="ghost" className="text-white/70 font-black uppercase text-xs gap-2" onClick={() => router.push(`/child/${childId}/dashboard`)}>
+            <LayoutDashboard className="w-4 h-4" /> Volver al Dashboard
+          </AppButton>
+          <AppButton variant="ghost" className="text-white/70 font-black uppercase text-xs gap-2" onClick={() => router.push('/children')}>
+            <Users className="w-4 h-4" /> Volver a Mis Niños
+          </AppButton>
+        </div>
       </div>
     </div>
   );

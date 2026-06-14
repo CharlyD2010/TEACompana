@@ -1,12 +1,14 @@
+
 'use client';
 
 import React from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { AppHeader, AppCard, AppButton, ProgressBar } from '@/components/app-components';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Play, ClipboardList, BookOpen, BarChart3, Trophy, Target, Loader2, AlertCircle, School, Users } from 'lucide-react';
+import { Play, ClipboardList, BookOpen, BarChart3, Trophy, Target, Loader2, AlertCircle, School, Users, Settings, LogOut } from 'lucide-react';
 import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { authService } from '@/services/authService';
 
 export default function ChildDashboardPage() {
   const router = useRouter();
@@ -42,9 +44,26 @@ export default function ChildDashboardPage() {
     );
   }
 
+  const handleLogout = async () => {
+    await authService.logout();
+    router.push('/');
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
-      <AppHeader title={`Dashboard: ${child.name}`} />
+      <AppHeader 
+        title={`Dashboard: ${child.name}`} 
+        showBackToChildren={true}
+      >
+        <div className="flex gap-2">
+          <AppButton variant="ghost" size="icon" className="rounded-full" onClick={() => router.push('/settings')}>
+            <Settings className="h-5 w-5" />
+          </AppButton>
+          <AppButton variant="ghost" size="icon" className="rounded-full text-destructive" onClick={handleLogout}>
+            <LogOut className="h-5 w-5" />
+          </AppButton>
+        </div>
+      </AppHeader>
 
       <div className="p-6 space-y-6">
         <AppCard className="p-6 bg-primary text-white relative overflow-hidden">
@@ -141,6 +160,10 @@ export default function ChildDashboardPage() {
             </div>
           </AppButton>
         </div>
+
+        <AppButton variant="ghost" className="w-full text-muted-foreground font-black text-xs uppercase" onClick={() => router.push('/children')}>
+          Volver a Mis Niños
+        </AppButton>
       </div>
     </div>
   );

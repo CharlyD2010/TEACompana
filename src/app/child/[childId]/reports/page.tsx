@@ -2,14 +2,15 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { useParams } from 'next/navigation';
-import { AppHeader, AppCard, ProgressBar, LoadingState, EmptyState } from '@/components/app-components';
+import { useParams, useRouter } from 'next/navigation';
+import { AppHeader, AppCard, ProgressBar, LoadingState, EmptyState, AppButton } from '@/components/app-components';
 import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { doc, collection, query, orderBy, limit } from 'firebase/firestore';
-import { TrendingUp, Calendar, Star, BarChart3, Clock, Target } from 'lucide-react';
+import { TrendingUp, Star, Clock, Target, LayoutDashboard, Users } from 'lucide-react';
 
 export default function ReportsPage() {
   const { childId } = useParams();
+  const router = useRouter();
   const db = useFirestore();
 
   const childRef = useMemo(() => db && childId ? doc(db, 'children', childId as string) : null, [db, childId]);
@@ -31,7 +32,12 @@ export default function ReportsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <AppHeader title="Reportes de Avance" />
+      <AppHeader 
+        title="Reportes de Avance" 
+        showBackToDashboard={true} 
+        showBackToChildren={true}
+        childId={childId as string}
+      />
 
       <div className="p-6 space-y-6">
         <AppCard className="p-6 bg-white flex justify-between items-center shadow-sm">
@@ -109,6 +115,15 @@ export default function ReportsPage() {
             </div>
           )}
         </section>
+
+        <div className="pt-8 flex flex-col gap-3">
+          <AppButton variant="outline" className="w-full h-14 font-black uppercase text-xs gap-2" onClick={() => router.push(`/child/${childId}/dashboard`)}>
+            <LayoutDashboard className="w-4 h-4" /> Volver al Dashboard
+          </AppButton>
+          <AppButton variant="ghost" className="w-full h-12 text-muted-foreground font-black uppercase text-[10px]" onClick={() => router.push('/children')}>
+            <Users className="w-3 h-3 mr-1" /> Mis Niños
+          </AppButton>
+        </div>
       </div>
     </div>
   );

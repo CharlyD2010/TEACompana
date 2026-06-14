@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Star, ChevronLeft, Loader2, Inbox, Rainbow } from 'lucide-react';
+import { Star, ChevronLeft, Loader2, Inbox, Rainbow, LayoutDashboard, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export const AppLogo = ({ className }: { className?: string }) => (
@@ -30,19 +30,46 @@ export const AppCard = ({ className, ...props }: React.ComponentProps<typeof Car
   <Card className={cn("rounded-3xl border-none shadow-md overflow-hidden", className)} {...props} />
 );
 
-export const AppHeader = ({ title, showBack = true, children }: { title: string, showBack?: boolean, children?: React.ReactNode }) => {
+export const AppHeader = ({ 
+  title, 
+  showBack = true, 
+  showBackToChildren = false,
+  showBackToDashboard = false,
+  childId,
+  children 
+}: { 
+  title: string, 
+  showBack?: boolean, 
+  showBackToChildren?: boolean,
+  showBackToDashboard?: boolean,
+  childId?: string,
+  children?: React.ReactNode 
+}) => {
   const router = useRouter();
   return (
     <div className="flex items-center justify-between p-6 bg-white shadow-sm sticky top-0 z-50">
       <div className="flex items-center gap-4">
-        {showBack ? (
+        {showBack && (
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
             <ChevronLeft className="h-6 w-6" />
           </Button>
-        ) : (
-          <Rainbow className="h-6 w-6 text-primary" />
         )}
-        <h1 className="text-xl font-black text-primary uppercase tracking-tight">{title}</h1>
+        {!showBack && <Rainbow className="h-6 w-6 text-primary" />}
+        <div className="flex flex-col">
+          <h1 className="text-xl font-black text-primary uppercase tracking-tight leading-none">{title}</h1>
+          <div className="flex gap-2 mt-1">
+            {showBackToChildren && (
+              <button onClick={() => router.push('/children')} className="flex items-center gap-1 text-[9px] font-black text-muted-foreground uppercase hover:text-primary transition-colors">
+                <Users className="w-2.5 h-2.5" /> Mis Niños
+              </button>
+            )}
+            {showBackToDashboard && childId && (
+              <button onClick={() => router.push(`/child/${childId}/dashboard`)} className="flex items-center gap-1 text-[9px] font-black text-muted-foreground uppercase hover:text-primary transition-colors">
+                <LayoutDashboard className="w-2.5 h-2.5" /> Dashboard
+              </button>
+            )}
+          </div>
+        </div>
       </div>
       {children}
     </div>

@@ -1,11 +1,12 @@
+
 'use client';
 
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AppHeader, AppCard } from '@/components/app-components';
+import { AppHeader, AppCard, AppButton } from '@/components/app-components';
 import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
-import { Trophy, Star, Medal, Award, Loader2, Lock } from 'lucide-react';
+import { Trophy, Star, Medal, Award, Loader2, Lock, LayoutDashboard, Users } from 'lucide-react';
 
 const ALL_REWARDS = [
   { id: 'first_game', name: 'Primer Juego', desc: '¡Has completado tu primera actividad!', icon: Medal, color: 'text-blue-500' },
@@ -16,6 +17,7 @@ const ALL_REWARDS = [
 
 export default function RewardsPage() {
   const { childId } = useParams();
+  const router = useRouter();
   const db = useFirestore();
   const { data: child, loading: childLoading } = useDoc(db && childId ? doc(db, 'children', childId as string) : null);
   
@@ -26,7 +28,12 @@ export default function RewardsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <AppHeader title="Tus Logros" />
+      <AppHeader 
+        title="Tus Logros" 
+        showBackToDashboard={true} 
+        showBackToChildren={true}
+        childId={childId as string}
+      />
       
       <div className="p-6 space-y-8">
         <AppCard className="p-8 bg-primary text-white text-center space-y-4">
@@ -56,6 +63,15 @@ export default function RewardsPage() {
               </AppCard>
             );
           })}
+        </div>
+
+        <div className="pt-8 flex flex-col gap-3">
+          <AppButton variant="outline" className="w-full h-14 font-black uppercase text-xs gap-2" onClick={() => router.push(`/child/${childId}/dashboard`)}>
+            <LayoutDashboard className="w-4 h-4" /> Volver al Dashboard
+          </AppButton>
+          <AppButton variant="ghost" className="w-full h-12 text-muted-foreground font-black uppercase text-[10px]" onClick={() => router.push('/children')}>
+            <Users className="w-3 h-3 mr-1" /> Mis Niños
+          </AppButton>
         </div>
       </div>
     </div>

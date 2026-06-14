@@ -5,7 +5,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppHeader, AppCard, AppButton, LoadingState, EmptyState } from '@/components/app-components';
 import { generateLearningPlan, GenerateLearningPlanOutput } from '@/ai/flows/generate-personalized-learning-plan';
-import { Sparkles, CheckCircle2, Lightbulb, Users, GraduationCap, Target } from 'lucide-react';
+import { Sparkles, CheckCircle2, Lightbulb, Users, GraduationCap, Target, LayoutDashboard, RotateCcw } from 'lucide-react';
 import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
 import { doc, collection, query, orderBy, limit, setDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
@@ -37,36 +37,7 @@ export default function LearningPlanPage() {
 
   const [generating, setGenerating] = useState(false);
 
-  // Fallback local plan generator if AI fails
-  function generateLocalFallbackPlan(childData: any, assessmentData: any): GenerateLearningPlanOutput {
-    const scores = assessmentData.scores;
-    const areas = Object.entries(scores)
-      .sort((a: any, b: any) => a[1] - b[1])
-      .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1));
-
-    const priorityAreas = areas.slice(0, 3);
-    
-    const fallbackPlans: Record<string, any> = {
-      Emociones: { goals: ["Identificar 3 emociones básicas", "Uso de pictogramas"], activities: ["Espejo de emociones", "Cuentos con caras"], parents: ["Validar sentimientos", "Usar tarjetas visuales"], teachers: ["Zona de calma en el aula"] },
-      Comunicacion: { goals: ["Expresar necesidades básicas", "Contacto visual"], activities: ["Juegos de imitación", "Tarjetas PEKS"], parents: ["Narrar rutinas diarias", "Paciencia en respuestas"], teachers: ["Uso de apoyos visuales"] },
-      Social: { goals: ["Turnos de juego", "Saludo inicial"], activities: ["Juegos de mesa simples", "Roleplay"], parents: ["Visitas controladas al parque", "Modelado de conducta"], teachers: ["Compañero guía en clase"] },
-      Cognitivo: { goals: ["Clasificar por color", "Atención 5 min"], activities: ["Sorting de objetos", "Rompecabezas"], parents: ["Juegos de memoria", "Rutinas consistentes"], teachers: ["Instrucciones paso a paso"] },
-      Motricidad: { goals: ["Pinza fina", "Equilibrio"], activities: ["Plastilina", "Circuito de obstáculos"], parents: ["Actividades de dibujo", "Juegos de pelota"], teachers: ["Adaptación de útiles escolares"] },
-      Rutinas: { goals: ["Secuencia mañana", "Transiciones suaves"], activities: ["Panel visual de día", "Canciones de cambio"], parents: ["Anticipar cambios", "Horarios fijos"], teachers: ["Timbre visual de cambio"] }
-    };
-
-    const result: GenerateLearningPlanOutput = {
-      priorityAreas,
-      weeklyGoals: priorityAreas.flatMap(a => fallbackPlans[a]?.goals || ["Mejorar autonomía"]),
-      recommendedActivities: priorityAreas.flatMap(a => fallbackPlans[a]?.activities || ["Juego libre"]),
-      suggestionsForParents: priorityAreas.flatMap(a => fallbackPlans[a]?.parents || ["Mantener paciencia"]),
-      suggestionsForTeachers: priorityAreas.flatMap(a => fallbackPlans[a]?.teachers || ["Adaptar materiales"])
-    };
-
-    return result;
-  }
-
-  async function handleGeneratePlan(isRetry = false) {
+  async function handleGeneratePlan() {
     if (!child || !assessments || assessments.length === 0 || !db) return;
     
     setGenerating(true);
@@ -74,7 +45,6 @@ export default function LearningPlanPage() {
       let result: GenerateLearningPlanOutput;
       
       try {
-        // Intentar con IA
         result = await generateLearningPlan({
           childName: child.name,
           teaLevel: child.teaLevel,
@@ -82,12 +52,11 @@ export default function LearningPlanPage() {
           learningStyle: child.learningStyle,
           assessmentResults: assessments[0].scores,
         });
-        toast({ title: "Plan generado con IA", description: "Hemos optimizado el plan con inteligencia artificial." });
+        toast({ title: "Plan generado con éxito" });
       } catch (aiErr) {
         console.warn("AI Plan failed, using local fallback", aiErr);
-        // Fallback local
-        result = generateLocalFallbackPlan(child, assessments[0]);
-        toast({ title: "Plan generado localmente", description: "Usando recomendaciones basadas en evaluación estándar." });
+        // Fallback local logic could be here if needed
+        throw aiErr;
       }
       
       const planId = Math.random().toString(36).substr(2, 9);
@@ -100,7 +69,7 @@ export default function LearningPlanPage() {
       
     } catch (err) {
       console.error(err);
-      toast({ variant: "destructive", title: "Error", description: "No se pudo guardar el plan." });
+      toast({ variant: "destructive", title: "Error", description: "No se pudo generar el plan." });
     } finally {
       setGenerating(false);
     }
@@ -113,7 +82,7 @@ export default function LearningPlanPage() {
   if (!assessments || assessments.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <AppHeader title="Plan de Aprendizaje" />
+        <AppHeader title="Plan de Aprendizaje" showBackToDashboard={true} childId={childId as string} />
         <div className="p-6">
           <EmptyState 
             title="Evaluación necesaria" 
@@ -130,7 +99,12 @@ export default function LearningPlanPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <AppHeader title="Plan de Aprendizaje" />
+      <AppHeader 
+        title="Plan de Aprendizaje" 
+        showBackToDashboard={true} 
+        showBackToChildren={true}
+        childId={childId as string}
+      />
       <div className="p-6 space-y-6">
         {localPlan ? (
           <div className="space-y-6 animate-in fade-in duration-500">
@@ -178,9 +152,14 @@ export default function LearningPlanPage() {
               <AppButton className="w-full h-16 text-lg" onClick={() => router.push(`/child/${childId}/child-mode`)}>
                 EMPEZAR ACTIVIDADES
               </AppButton>
-              <AppButton variant="ghost" className="w-full text-muted-foreground font-black text-xs uppercase" onClick={() => handleGeneratePlan(true)}>
-                Actualizar Plan
-              </AppButton>
+              <div className="flex flex-col gap-2">
+                <AppButton variant="outline" className="w-full h-12 text-xs font-black uppercase gap-2" onClick={handleGeneratePlan}>
+                  <RotateCcw className="w-3 h-3" /> Regenerar Plan
+                </AppButton>
+                <AppButton variant="ghost" className="w-full h-12 text-muted-foreground font-black text-xs uppercase gap-2" onClick={() => router.push(`/child/${childId}/dashboard`)}>
+                  <LayoutDashboard className="w-4 h-4" /> Volver al Dashboard
+                </AppButton>
+              </div>
             </div>
           </div>
         ) : (

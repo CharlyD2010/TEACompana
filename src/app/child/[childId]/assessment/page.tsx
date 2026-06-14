@@ -8,6 +8,17 @@ import { Slider } from '@/components/ui/slider';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const AREAS = [
   { id: 'emociones', label: 'Emociones', desc: 'Capacidad para reconocer y expresar sentimientos.' },
@@ -33,6 +44,7 @@ export default function AssessmentPage() {
   const { user } = useUser();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   const [scores, setScores] = useState<any>({
     emociones: 3,
     comunicacion: 3,
@@ -60,7 +72,6 @@ export default function AssessmentPage() {
           createdAt: new Date().toISOString(),
         });
 
-        // Al finalizar, el plan de aprendizaje se generará automáticamente en la siguiente pantalla
         router.push(`/child/${childId}/learning-plan`);
       } catch (e: any) {
         toast({ variant: "destructive", title: "Error al guardar", description: e.message });
@@ -73,9 +84,20 @@ export default function AssessmentPage() {
   const currentArea = AREAS[step];
   const progress = ((step + 1) / AREAS.length) * 100;
 
+  const handleScoreChange = (val: number) => {
+    setScores({ ...scores, [currentArea.id]: val });
+    setHasChanges(true);
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
-      <AppHeader title="Evaluación Inicial" />
+      <AppHeader 
+        title="Evaluación Inicial" 
+        showBack={false}
+        showBackToDashboard={true}
+        showBackToChildren={true}
+        childId={childId as string}
+      />
       
       <div className="p-6 space-y-8">
         <div className="space-y-2">
@@ -100,7 +122,7 @@ export default function AssessmentPage() {
 
             <Slider
               value={[scores[currentArea.id]]}
-              onValueChange={([val]) => setScores({ ...scores, [currentArea.id]: val })}
+              onValueChange={([val]) => handleScoreChange(val)}
               min={1}
               max={5}
               step={1}
@@ -110,15 +132,44 @@ export default function AssessmentPage() {
           </div>
         </AppCard>
 
-        <div className="flex gap-4">
-          {step > 0 && (
-            <AppButton variant="outline" className="flex-1 h-14" onClick={() => setStep(step - 1)} disabled={loading}>
-              Anterior
+        <div className="flex flex-col gap-4">
+          <div className="flex gap-4">
+            {step > 0 && (
+              <AppButton variant="outline" className="flex-1 h-14" onClick={() => setStep(step - 1)} disabled={loading}>
+                Anterior
+              </AppButton>
+            )}
+            <AppButton className="flex-1 h-14" onClick={handleNext} disabled={loading}>
+              {step === AREAS.length - 1 ? (loading ? 'Guardando...' : 'Finalizar') : 'Siguiente'}
             </AppButton>
-          )}
-          <AppButton className="flex-1 h-14" onClick={handleNext} disabled={loading}>
-            {step === AREAS.length - 1 ? (loading ? 'Guardando...' : 'Finalizar') : 'Siguiente'}
-          </AppButton>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <AppButton variant="ghost" className="w-full text-muted-foreground font-black text-xs uppercase">
+                  Cancelar y volver al Dashboard
+                </AppButton>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rounded-[2rem]">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="font-black text-primary uppercase text-xl">¿Seguro que deseas salir?</AlertDialogTitle>
+                  <AlertDialogDescription className="text-muted-foreground font-medium">
+                    {hasChanges ? "Tienes cambios sin guardar que se perderán." : "Volverás al dashboard del niño."}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="rounded-full font-black uppercase text-xs">Continuar evaluando</AlertDialogCancel>
+                  <AlertDialogAction 
+                    className="rounded-full font-black uppercase text-xs bg-destructive text-white"
+                    onClick={() => router.push(`/child/${childId}/dashboard`)}
+                  >
+                    Salir sin guardar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </div>
     </div>

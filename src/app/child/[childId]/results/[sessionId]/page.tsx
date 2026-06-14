@@ -4,7 +4,7 @@
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppCard, AppButton, LoadingState } from '@/components/app-components';
-import { Trophy, Star, RotateCcw, Home, Clock, Target, AlertCircle, PlayCircle, ArrowRight } from 'lucide-react';
+import { Trophy, Star, RotateCcw, Clock, Target, AlertCircle, ArrowRight, LayoutDashboard, Users } from 'lucide-react';
 import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
@@ -95,17 +95,17 @@ export default function ResultsPage() {
             <div className="grid grid-cols-2 gap-3">
               <AppButton 
                 variant="outline" 
-                className="h-14 text-sm border-2 border-primary/20 text-primary hover:bg-primary/5 rounded-2xl" 
-                onClick={() => router.push(`/child/${childId}/activities`)}
+                className="h-14 text-sm border-2 border-primary/20 text-primary hover:bg-primary/5 rounded-2xl gap-2" 
+                onClick={() => router.push(`/child/${childId}/dashboard`)}
               >
-                ACTIVIDADES
+                <LayoutDashboard className="w-4 h-4" /> DASHBOARD
               </AppButton>
               <AppButton 
                 variant="outline" 
-                className="h-14 text-sm border-2 border-primary/20 text-primary hover:bg-primary/5 rounded-2xl" 
-                onClick={() => router.push(`/child/${childId}/dashboard`)}
+                className="h-14 text-sm border-2 border-primary/20 text-primary hover:bg-primary/5 rounded-2xl gap-2" 
+                onClick={() => router.push('/children')}
               >
-                DASHBOARD
+                <Users className="w-4 h-4" /> MIS NIÑOS
               </AppButton>
             </div>
           </div>
