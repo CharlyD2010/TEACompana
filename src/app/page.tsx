@@ -1,9 +1,10 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppButton, AppInput, AppCard } from '@/components/app-components';
-import { Heart, Loader2 } from 'lucide-react';
+import { AppButton, AppInput, AppCard, AppLogo } from '@/components/app-components';
+import { Loader2 } from 'lucide-react';
 import { authService } from '@/services/authService';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
@@ -15,7 +16,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Redirigir si ya está autenticado
   useEffect(() => {
     if (user && !authLoading) {
       router.push('/children');
@@ -45,17 +45,15 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
       <div className="mb-12 text-center">
-        <div className="w-24 h-24 bg-primary rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl rotate-3">
-          <Heart className="w-12 h-12 text-white fill-white" />
-        </div>
-        <h1 className="text-4xl font-black text-primary tracking-tight">TEACompaña</h1>
-        <p className="text-muted-foreground font-medium">Juntos en el camino del aprendizaje</p>
+        <AppLogo className="mb-6" />
+        <h1 className="text-4xl font-black text-primary tracking-tight uppercase">TEACompaña</h1>
+        <p className="text-muted-foreground font-bold uppercase text-xs tracking-widest mt-2">Juntos en el camino del aprendizaje</p>
       </div>
 
-      <AppCard className="w-full max-w-md p-8 bg-white/80 backdrop-blur-sm">
+      <AppCard className="w-full max-w-md p-8 bg-white/80 backdrop-blur-sm border-t-4 border-primary">
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-sm font-bold text-muted-foreground ml-2">Correo Electrónico</label>
+            <label className="text-[10px] font-black text-muted-foreground uppercase ml-2 tracking-widest">Correo Electrónico</label>
             <AppInput 
               type="email" 
               placeholder="nombre@ejemplo.com" 
@@ -67,7 +65,7 @@ export default function LoginPage() {
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-bold text-muted-foreground ml-2">Contraseña</label>
+            <label className="text-[10px] font-black text-muted-foreground uppercase ml-2 tracking-widest">Contraseña</label>
             <AppInput 
               type="password" 
               placeholder="••••••••" 
@@ -85,10 +83,10 @@ export default function LoginPage() {
 
         <div className="mt-8 text-center space-y-4">
           <div className="flex flex-col gap-2">
-            <AppButton variant="outline" className="w-full" onClick={() => router.push('/register-parent')} disabled={loading}>
+            <AppButton variant="outline" className="w-full h-12 text-xs font-black uppercase" onClick={() => router.push('/register-parent')} disabled={loading}>
               Registrar como Padre/Tutor
             </AppButton>
-            <AppButton variant="ghost" className="w-full" onClick={() => router.push('/register-teacher')} disabled={loading}>
+            <AppButton variant="ghost" className="w-full h-12 text-xs font-black uppercase text-muted-foreground" onClick={() => router.push('/register-teacher')} disabled={loading}>
               Registrar como Docente
             </AppButton>
           </div>

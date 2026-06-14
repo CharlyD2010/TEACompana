@@ -6,8 +6,17 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Star, ChevronLeft, Loader2, Inbox } from 'lucide-react';
+import { Star, ChevronLeft, Loader2, Inbox, Rainbow } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+export const AppLogo = ({ className }: { className?: string }) => (
+  <div className={cn("flex flex-col items-center gap-2", className)}>
+    <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg rotate-3 relative overflow-hidden group">
+      <Rainbow className="w-10 h-10 text-white animate-pulse" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent" />
+    </div>
+  </div>
+);
 
 export const AppButton = ({ className, ...props }: React.ComponentProps<typeof Button>) => (
   <Button className={cn("rounded-full font-bold transition-all active:scale-95 shadow-sm", className)} {...props} />
@@ -26,10 +35,12 @@ export const AppHeader = ({ title, showBack = true, children }: { title: string,
   return (
     <div className="flex items-center justify-between p-6 bg-white shadow-sm sticky top-0 z-50">
       <div className="flex items-center gap-4">
-        {showBack && (
+        {showBack ? (
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
             <ChevronLeft className="h-6 w-6" />
           </Button>
+        ) : (
+          <Rainbow className="h-6 w-6 text-primary" />
         )}
         <h1 className="text-xl font-black text-primary uppercase tracking-tight">{title}</h1>
       </div>

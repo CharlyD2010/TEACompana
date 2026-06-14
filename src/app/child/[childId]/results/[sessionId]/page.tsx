@@ -1,9 +1,10 @@
+
 'use client';
 
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppCard, AppButton, LoadingState } from '@/components/app-components';
-import { Trophy, Star, RotateCcw, Home, Clock, Target, AlertCircle } from 'lucide-react';
+import { Trophy, Star, RotateCcw, Home, Clock, Target, AlertCircle, PlayCircle, ArrowRight } from 'lucide-react';
 import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
@@ -12,7 +13,6 @@ export default function ResultsPage() {
   const router = useRouter();
   const db = useFirestore();
   
-  // Ruta de subcolección según backend.json
   const sessionRef = db && childId && sessionId 
     ? doc(db, 'children', childId as string, 'game_sessions', sessionId as string) 
     : null;
@@ -34,7 +34,7 @@ export default function ResultsPage() {
 
   return (
     <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6 text-white overflow-y-auto">
-      <div className="w-full max-w-md animate-in slide-in-from-bottom-10 duration-500">
+      <div className="w-full max-w-md animate-in slide-in-from-bottom-10 duration-500 my-10">
         <AppCard className="p-8 bg-white text-foreground text-center space-y-8 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-accent opacity-50"></div>
           
@@ -78,18 +78,36 @@ export default function ResultsPage() {
           <div className="flex flex-col gap-3 pt-4">
             <AppButton 
               className="h-16 text-lg bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-lg rounded-2xl group" 
+              onClick={() => router.push(`/child/${childId}/game/${session.gameId}`)}
+            >
+              <RotateCcw className="mr-2 w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+              REPETIR JUEGO
+            </AppButton>
+            
+            <AppButton 
+              className="h-16 text-lg bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg rounded-2xl group" 
               onClick={() => router.push(`/child/${childId}/activities`)}
             >
-              JUGAR OTRA VEZ
-              <RotateCcw className="ml-2 w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+              <ArrowRight className="mr-2 w-5 h-5" />
+              JUGAR OTRO JUEGO
             </AppButton>
-            <AppButton 
-              variant="outline" 
-              className="h-16 text-lg border-2 border-primary/20 text-primary hover:bg-primary/5 rounded-2xl" 
-              onClick={() => router.push(`/child/${childId}/dashboard`)}
-            >
-              <Home className="mr-2 w-5 h-5" /> DASHBOARD
-            </AppButton>
+
+            <div className="grid grid-cols-2 gap-3">
+              <AppButton 
+                variant="outline" 
+                className="h-14 text-sm border-2 border-primary/20 text-primary hover:bg-primary/5 rounded-2xl" 
+                onClick={() => router.push(`/child/${childId}/activities`)}
+              >
+                ACTIVIDADES
+              </AppButton>
+              <AppButton 
+                variant="outline" 
+                className="h-14 text-sm border-2 border-primary/20 text-primary hover:bg-primary/5 rounded-2xl" 
+                onClick={() => router.push(`/child/${childId}/dashboard`)}
+              >
+                DASHBOARD
+              </AppButton>
+            </div>
           </div>
         </AppCard>
       </div>

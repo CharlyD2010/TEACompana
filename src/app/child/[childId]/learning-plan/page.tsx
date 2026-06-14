@@ -5,7 +5,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppHeader, AppCard, AppButton, LoadingState, EmptyState } from '@/components/app-components';
 import { generateLearningPlan, GenerateLearningPlanOutput } from '@/ai/flows/generate-personalized-learning-plan';
-import { Sparkles, CheckCircle2, Lightbulb, Users, GraduationCap, AlertCircle } from 'lucide-react';
+import { Sparkles, CheckCircle2, Lightbulb, Users, GraduationCap, Target } from 'lucide-react';
 import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
 import { doc, collection, query, orderBy, limit, setDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
@@ -37,18 +37,58 @@ export default function LearningPlanPage() {
 
   const [generating, setGenerating] = useState(false);
 
-  async function handleGenerateNewPlan() {
+  // Fallback local plan generator if AI fails
+  function generateLocalFallbackPlan(childData: any, assessmentData: any): GenerateLearningPlanOutput {
+    const scores = assessmentData.scores;
+    const areas = Object.entries(scores)
+      .sort((a: any, b: any) => a[1] - b[1])
+      .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1));
+
+    const priorityAreas = areas.slice(0, 3);
+    
+    const fallbackPlans: Record<string, any> = {
+      Emociones: { goals: ["Identificar 3 emociones básicas", "Uso de pictogramas"], activities: ["Espejo de emociones", "Cuentos con caras"], parents: ["Validar sentimientos", "Usar tarjetas visuales"], teachers: ["Zona de calma en el aula"] },
+      Comunicacion: { goals: ["Expresar necesidades básicas", "Contacto visual"], activities: ["Juegos de imitación", "Tarjetas PEKS"], parents: ["Narrar rutinas diarias", "Paciencia en respuestas"], teachers: ["Uso de apoyos visuales"] },
+      Social: { goals: ["Turnos de juego", "Saludo inicial"], activities: ["Juegos de mesa simples", "Roleplay"], parents: ["Visitas controladas al parque", "Modelado de conducta"], teachers: ["Compañero guía en clase"] },
+      Cognitivo: { goals: ["Clasificar por color", "Atención 5 min"], activities: ["Sorting de objetos", "Rompecabezas"], parents: ["Juegos de memoria", "Rutinas consistentes"], teachers: ["Instrucciones paso a paso"] },
+      Motricidad: { goals: ["Pinza fina", "Equilibrio"], activities: ["Plastilina", "Circuito de obstáculos"], parents: ["Actividades de dibujo", "Juegos de pelota"], teachers: ["Adaptación de útiles escolares"] },
+      Rutinas: { goals: ["Secuencia mañana", "Transiciones suaves"], activities: ["Panel visual de día", "Canciones de cambio"], parents: ["Anticipar cambios", "Horarios fijos"], teachers: ["Timbre visual de cambio"] }
+    };
+
+    const result: GenerateLearningPlanOutput = {
+      priorityAreas,
+      weeklyGoals: priorityAreas.flatMap(a => fallbackPlans[a]?.goals || ["Mejorar autonomía"]),
+      recommendedActivities: priorityAreas.flatMap(a => fallbackPlans[a]?.activities || ["Juego libre"]),
+      suggestionsForParents: priorityAreas.flatMap(a => fallbackPlans[a]?.parents || ["Mantener paciencia"]),
+      suggestionsForTeachers: priorityAreas.flatMap(a => fallbackPlans[a]?.teachers || ["Adaptar materiales"])
+    };
+
+    return result;
+  }
+
+  async function handleGeneratePlan(isRetry = false) {
     if (!child || !assessments || assessments.length === 0 || !db) return;
     
     setGenerating(true);
     try {
-      const result = await generateLearningPlan({
-        childName: child.name,
-        teaLevel: child.teaLevel,
-        interests: child.interests || [],
-        learningStyle: child.learningStyle,
-        assessmentResults: assessments[0].scores,
-      });
+      let result: GenerateLearningPlanOutput;
+      
+      try {
+        // Intentar con IA
+        result = await generateLearningPlan({
+          childName: child.name,
+          teaLevel: child.teaLevel,
+          interests: child.interests || [],
+          learningStyle: child.learningStyle,
+          assessmentResults: assessments[0].scores,
+        });
+        toast({ title: "Plan generado con IA", description: "Hemos optimizado el plan con inteligencia artificial." });
+      } catch (aiErr) {
+        console.warn("AI Plan failed, using local fallback", aiErr);
+        // Fallback local
+        result = generateLocalFallbackPlan(child, assessments[0]);
+        toast({ title: "Plan generado localmente", description: "Usando recomendaciones basadas en evaluación estándar." });
+      }
       
       const planId = Math.random().toString(36).substr(2, 9);
       await setDoc(doc(db, 'children', childId as string, 'learning_plans', planId), {
@@ -58,17 +98,16 @@ export default function LearningPlanPage() {
         createdAt: new Date().toISOString(),
       });
       
-      toast({ title: "Plan generado", description: "El plan de aprendizaje ha sido actualizado." });
     } catch (err) {
       console.error(err);
-      toast({ variant: "destructive", title: "Error de IA", description: "No se pudo generar el plan en este momento." });
+      toast({ variant: "destructive", title: "Error", description: "No se pudo guardar el plan." });
     } finally {
       setGenerating(false);
     }
   }
 
   if (childLoading || assessmentLoading || planLoading || generating) {
-    return <div className="min-h-screen flex items-center justify-center"><LoadingState message={generating ? "Nuestra IA está trabajando..." : "Cargando plan..."} /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><LoadingState message={generating ? "Analizando evaluación..." : "Cargando plan..."} /></div>;
   }
 
   if (!assessments || assessments.length === 0) {
@@ -78,7 +117,7 @@ export default function LearningPlanPage() {
         <div className="p-6">
           <EmptyState 
             title="Evaluación necesaria" 
-            description="Para generar un plan personalizado impulsado por IA, primero debemos realizar la evaluación inicial del niño." 
+            description="Para generar un plan personalizado, primero debemos realizar la evaluación inicial del niño." 
             actionLabel="Ir a Evaluación"
             onAction={() => router.push(`/child/${childId}/assessment`)}
           />
@@ -94,13 +133,13 @@ export default function LearningPlanPage() {
       <AppHeader title="Plan de Aprendizaje" />
       <div className="p-6 space-y-6">
         {localPlan ? (
-          <div className="space-y-6">
-            <AppCard className="p-6 bg-primary text-white space-y-2">
+          <div className="space-y-6 animate-in fade-in duration-500">
+            <AppCard className="p-6 bg-primary text-white space-y-2 border-l-8 border-l-accent/50">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 fill-accent text-accent" />
                 <h3 className="text-lg font-black uppercase tracking-wider">Plan para {child?.name}</h3>
               </div>
-              <p className="text-sm opacity-90 font-medium italic">"IA generada basándose en las necesidades actuales."</p>
+              <p className="text-sm opacity-90 font-medium italic">"Recomendaciones personalizadas basadas en el perfil actual."</p>
             </AppCard>
 
             <section className="space-y-3">
@@ -139,28 +178,20 @@ export default function LearningPlanPage() {
               <AppButton className="w-full h-16 text-lg" onClick={() => router.push(`/child/${childId}/child-mode`)}>
                 EMPEZAR ACTIVIDADES
               </AppButton>
-              <AppButton variant="ghost" className="w-full text-muted-foreground font-black text-xs" onClick={handleGenerateNewPlan}>
-                REGENERAR PLAN CON IA
+              <AppButton variant="ghost" className="w-full text-muted-foreground font-black text-xs uppercase" onClick={() => handleGeneratePlan(true)}>
+                Actualizar Plan
               </AppButton>
             </div>
           </div>
         ) : (
           <EmptyState 
-            title="Plan no generado" 
-            description="Hemos analizado la evaluación. Haz clic abajo para generar el primer plan impulsado por inteligencia artificial." 
+            title="Analizar resultados" 
+            description="Hemos analizado la evaluación. Haz clic abajo para generar el plan de desarrollo." 
             actionLabel="Generar Plan ahora"
-            onAction={handleGenerateNewPlan}
+            onAction={() => handleGeneratePlan()}
           />
         )}
       </div>
     </div>
   );
 }
-
-const Target = ({ className }: { className?: string }) => (
-  <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <circle cx="12" cy="12" r="6" />
-    <circle cx="12" cy="12" r="2" />
-  </svg>
-);

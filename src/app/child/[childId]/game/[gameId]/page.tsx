@@ -1,13 +1,25 @@
+
 'use client';
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppButton } from '@/components/app-components';
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, X, AlertTriangle } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { FirestorePermissionError } from '@/firebase/errors';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const GAME_DATA: Record<string, any> = {
   g1: {
@@ -96,13 +108,11 @@ export default function GamePlayPage() {
       createdAt: new Date().toISOString(),
     };
 
-    // 1. Guardar Sesión en subcolección
     const sessionRef = doc(db, 'children', childId as string, 'game_sessions', sessionId);
     
     try {
       await setDoc(sessionRef, sessionData);
 
-      // 2. Actualizar Progreso (game_progress como subcolección)
       const progressId = `${childId}_${gameId}`;
       const progressRef = doc(db, 'children', childId as string, 'game_progress', progressId);
       await setDoc(progressRef, {
@@ -115,14 +125,12 @@ export default function GamePlayPage() {
         updatedAt: serverTimestamp(),
       }, { merge: true });
 
-      // 3. Actualizar Totales del Niño
       const childRef = doc(db, 'children', childId as string);
       await updateDoc(childRef, {
         points: increment(finalCorrect * 10),
         stars: increment(stars)
       });
 
-      // Navegar a resultados
       router.push(`/child/${childId}/results/${sessionId}`);
     } catch (e: any) {
       setIsFinishing(false);
@@ -150,8 +158,36 @@ export default function GamePlayPage() {
           <h2 className="font-black text-primary uppercase tracking-tight leading-none">{game.name}</h2>
           <p className="text-[10px] font-bold text-muted-foreground uppercase">{game.area}</p>
         </div>
-        <div className="text-sm font-black bg-white px-4 py-1 rounded-full shadow-sm border-2 border-primary/10">
-          {currentIdx + 1} / {game.questions.length}
+        
+        <div className="flex items-center gap-4">
+          <div className="text-sm font-black bg-white px-4 py-1 rounded-full shadow-sm border-2 border-primary/10">
+            {currentIdx + 1} / {game.questions.length}
+          </div>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <AppButton variant="ghost" size="icon" className="rounded-full text-destructive hover:bg-destructive/10">
+                <X className="w-5 h-5" />
+              </AppButton>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-[2rem]">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-black text-primary uppercase text-xl">¿Seguro que deseas salir?</AlertDialogTitle>
+                <AlertDialogDescription className="text-muted-foreground font-medium">
+                  El progreso de esta partida no se guardará si sales ahora.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-full font-black uppercase text-xs">Continuar jugando</AlertDialogCancel>
+                <AlertDialogAction 
+                  className="rounded-full font-black uppercase text-xs bg-destructive text-destructive-foreground"
+                  onClick={() => router.push(`/child/${childId}/activities`)}
+                >
+                  Salir del juego
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
