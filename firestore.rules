@@ -67,10 +67,8 @@ service cloud.firestore {
       match /game_sessions/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
       match /game_progress/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
       match /child_rewards/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
-      match /teacher_observations/{id} { 
-        allow read: if isLoggedIn() && canAccessChildData(childId);
-        allow write: if isLoggedIn() && getUserData().role == 'teacher' && isTeacherOfInstitution(get(/databases/$(database)/documents/children/$(childId)).data.institutionId);
-      }
+      match /teacher_observations/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
+      match /messages/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
     }
     
     match /rewards/{rewardId} {

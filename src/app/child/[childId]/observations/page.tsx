@@ -1,25 +1,22 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AppHeader, AppCard, AppButton, LoadingState, AppInput, EmptyState } from '@/components/app-components';
+import { AppHeader, AppCard, AppButton, LoadingState } from '@/components/app-components';
 import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
 import { doc, collection, query, orderBy, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { MessageSquare, Send, Calendar, User, LayoutDashboard, Users, AlertCircle } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
+import { Send, LayoutDashboard, Users, User, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export default function ObservationsPage() {
+export default function ObservationsChatPage() {
   const { childId } = useParams();
   const router = useRouter();
   const db = useFirestore();
   const { user } = useUser();
   const [userData, setUserData] = useState<any>(null);
-  
   const [message, setMessage] = useState('');
-  const [type, setType] = useState('progreso');
   const [sending, setSending] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user && db) {
@@ -32,135 +29,136 @@ export default function ObservationsPage() {
   const childRef = useMemo(() => db && childId ? doc(db, 'children', childId as string) : null, [db, childId]);
   const { data: child, loading: childLoading } = useDoc(childRef);
 
-  const observationsQuery = useMemo(() => db && childId ? query(
-    collection(db, 'children', childId as string, 'teacher_observations'),
-    orderBy('createdAt', 'desc')
+  const messagesQuery = useMemo(() => db && childId ? query(
+    collection(db, 'children', childId as string, 'messages'),
+    orderBy('createdAt', 'asc')
   ) : null, [db, childId]);
 
-  const { data: observations, loading: obsLoading } = useCollection(observationsQuery);
+  const { data: messages, loading: messagesLoading } = useCollection(messagesQuery);
 
-  const isTeacher = userData?.role === 'teacher';
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
-  const handleSend = async () => {
+  const handleSend = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!message.trim() || !db || !user || !userData) return;
     setSending(true);
     try {
-      const obsRef = collection(db, 'children', childId as string, 'teacher_observations');
-      await addDoc(obsRef, {
+      const msgsRef = collection(db, 'children', childId as string, 'messages');
+      await addDoc(msgsRef, {
         childId,
-        teacherId: user.uid,
-        teacherName: userData.fullName || 'Docente',
+        senderId: user.uid,
+        senderName: userData.fullName || 'Usuario',
+        senderRole: userData.role,
         message: message.trim(),
-        recommendationType: type,
-        createdAt: new Date().toISOString(),
-        visibleToParent: true
+        createdAt: serverTimestamp(),
       });
       setMessage('');
-      toast({ title: "Observación enviada" });
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Error", description: e.message });
+      toast({ variant: "destructive", title: "Error", description: "No se pudo enviar el mensaje." });
     } finally {
       setSending(false);
     }
   };
 
-  if (childLoading || obsLoading) return <LoadingState />;
+  if (childLoading || messagesLoading) return <LoadingState />;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="h-screen flex flex-col bg-background">
       <AppHeader 
-        title="Observaciones" 
+        title={`Chat: ${child?.name}`} 
         showBackToDashboard={true} 
         showBackToChildren={true}
         childId={childId as string}
       />
 
-      <div className="p-6 space-y-6">
-        {isTeacher && (
-          <AppCard className="p-6 space-y-4 border-2 border-secondary/20 shadow-lg">
-            <div className="flex items-center gap-2 font-black text-secondary-foreground uppercase text-xs tracking-widest">
-              <MessageSquare className="w-4 h-4" /> Nueva Recomendación
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4" ref={scrollRef}>
+        {!messages || messages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
+            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
+              <User className="w-10 h-10 text-muted-foreground opacity-30" />
             </div>
-            
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted-foreground uppercase">Tipo de observación</label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger className="rounded-xl border-2">
-                  <SelectValue placeholder="Selecciona un tipo" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  <SelectItem value="progreso">Progreso Académico</SelectItem>
-                  <SelectItem value="conducta">Conducta y Emociones</SelectItem>
-                  <SelectItem value="actividad">Sugerencia de Actividad</SelectItem>
-                  <SelectItem value="seguimiento">Seguimiento Médico/Terapia</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-muted-foreground uppercase">Mensaje para el padre</label>
-              <Textarea 
-                placeholder="Escribe aquí tus observaciones..." 
-                className="rounded-xl border-2 min-h-[120px]"
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-              />
-            </div>
-
-            <AppButton 
-              className="w-full h-14 bg-secondary text-secondary-foreground gap-2" 
-              onClick={handleSend}
-              disabled={sending || !message.trim()}
-            >
-              <Send className="w-4 h-4" /> {sending ? 'Enviando...' : 'Enviar Observación'}
-            </AppButton>
-          </AppCard>
+            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Aún no hay mensajes sobre {child?.name}</p>
+          </div>
+        ) : (
+          messages.map((msg: any) => {
+            const isMe = msg.senderId === user?.uid;
+            return (
+              <div 
+                key={msg.id} 
+                className={cn(
+                  "flex flex-col max-w-[85%] md:max-w-[70%] space-y-1",
+                  isMe ? "ml-auto items-end" : "mr-auto items-start"
+                )}
+              >
+                <div className="flex items-center gap-2 px-2">
+                  <span className="text-[8px] font-black uppercase text-muted-foreground tracking-tighter">
+                    {msg.senderName} • {msg.senderRole === 'teacher' ? 'DOCENTE' : 'PADRE'}
+                  </span>
+                </div>
+                <div 
+                  className={cn(
+                    "p-4 rounded-[2rem] text-sm font-medium shadow-sm",
+                    isMe 
+                      ? "bg-primary text-white rounded-tr-none" 
+                      : "bg-white text-foreground rounded-tl-none"
+                  )}
+                >
+                  {msg.message}
+                </div>
+                <div className="px-2 flex items-center gap-1 opacity-50">
+                  <Clock className="w-2 h-2" />
+                  <span className="text-[7px] font-black uppercase">
+                    {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
+                  </span>
+                </div>
+              </div>
+            );
+          })
         )}
+      </div>
 
-        <div className="space-y-4">
-          <h3 className="font-black text-primary uppercase text-xs tracking-widest px-2">Historial de Comunicación</h3>
-          
-          {!observations || observations.length === 0 ? (
-            <EmptyState 
-              title="Sin observaciones" 
-              description={isTeacher ? "Aún no has enviado recomendaciones para este niño." : "El docente aún no ha registrado observaciones."} 
-            />
-          ) : (
-            <div className="space-y-4">
-              {observations.map((obs: any) => (
-                <AppCard key={obs.id} className="p-6 bg-white shadow-sm border-l-4 border-l-secondary relative">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-secondary/10 rounded-full flex items-center justify-center text-secondary">
-                        <User className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-black text-primary uppercase">{obs.teacherName}</div>
-                        <div className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1">
-                          <Calendar className="w-2.5 h-2.5" /> {new Date(obs.createdAt).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                    <span className="text-[8px] font-black bg-secondary/20 text-secondary-foreground px-2 py-0.5 rounded-full uppercase tracking-tighter">
-                      {obs.recommendationType}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{obs.message}</p>
-                </AppCard>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="pt-8 flex flex-col gap-3">
-          <AppButton variant="outline" className="w-full h-14 font-black uppercase text-xs gap-2" onClick={() => router.push(`/child/${childId}/dashboard`)}>
-            <LayoutDashboard className="w-4 h-4" /> Volver al Dashboard
+      <div className="p-4 md:p-6 bg-white border-t border-muted/50 safe-area-bottom">
+        <form onSubmit={handleSend} className="flex gap-3 max-w-4xl mx-auto">
+          <input 
+            type="text" 
+            placeholder="Escribe un mensaje..."
+            className="flex-1 h-14 bg-muted/30 rounded-2xl px-6 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+            value={message}
+            onChange={e => setMessage(e.target.value)}
+            disabled={sending}
+          />
+          <AppButton 
+            type="submit" 
+            className="w-14 h-14 p-0 rounded-2xl bg-secondary hover:bg-secondary/90 text-secondary-foreground" 
+            disabled={sending || !message.trim()}
+          >
+            <Send className="w-5 h-5" />
           </AppButton>
-          <AppButton variant="ghost" className="w-full h-12 text-muted-foreground font-black uppercase text-[10px]" onClick={() => router.push('/children')}>
-            <Users className="w-3 h-3 mr-1" /> Mis Niños
-          </AppButton>
+        </form>
+        
+        <div className="mt-4 flex flex-col md:flex-row gap-3 justify-center">
+          <button 
+            onClick={() => router.push(`/child/${childId}/dashboard`)}
+            className="flex items-center justify-center gap-2 text-[9px] font-black text-muted-foreground uppercase hover:text-primary transition-colors py-2"
+          >
+            <LayoutDashboard className="w-3 h-3" /> Dashboard
+          </button>
+          <button 
+            onClick={() => router.push('/children')}
+            className="flex items-center justify-center gap-2 text-[9px] font-black text-muted-foreground uppercase hover:text-primary transition-colors py-2"
+          >
+            <Users className="w-3 h-3" /> Mis Niños
+          </button>
         </div>
       </div>
     </div>
   );
+}
+
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(' ');
 }
