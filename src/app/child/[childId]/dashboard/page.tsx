@@ -4,7 +4,7 @@ import React from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { AppHeader, AppCard, AppButton, ProgressBar } from '@/components/app-components';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Play, ClipboardList, BookOpen, BarChart3, Trophy, Target, Loader2, AlertCircle } from 'lucide-react';
+import { Play, ClipboardList, BookOpen, BarChart3, Trophy, Target, Loader2, AlertCircle, School, Users } from 'lucide-react';
 import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
@@ -55,13 +55,23 @@ export default function ChildDashboardPage() {
             </Avatar>
             <div>
               <h2 className="text-2xl font-black">{child.name}</h2>
-              <div className="flex gap-2 mt-1">
-                <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-bold uppercase">Nivel {child.teaLevel}</span>
-                <span className="px-2 py-0.5 bg-accent/30 rounded-full text-xs font-bold uppercase">{child.learningStyle}</span>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <span className="px-2 py-0.5 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-tight">TEA {child.teaLevel}</span>
+                <span className="px-2 py-0.5 bg-accent/30 rounded-full text-[10px] font-black uppercase tracking-tight">{child.learningStyle}</span>
               </div>
             </div>
           </div>
-          <div className="mt-8 grid grid-cols-3 gap-4 relative z-10">
+          
+          <div className="mt-6 flex flex-col gap-2 relative z-10 text-[10px] font-black uppercase tracking-widest opacity-90">
+            <div className="flex items-center gap-2">
+              <School className="w-3 h-3" /> {child.institutionName || 'Sin Institución'}
+            </div>
+            <div className="flex items-center gap-2">
+              <Users className="w-3 h-3" /> {child.groupName || 'Sin Grupo'}
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-3 gap-4 relative z-10">
             <div className="text-center">
               <div className="text-2xl font-black">{child.points || 0}</div>
               <div className="text-[10px] opacity-80 uppercase font-bold">Puntos</div>

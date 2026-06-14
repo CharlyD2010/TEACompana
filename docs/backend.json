@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "User": {
@@ -11,7 +10,10 @@
         "email": { "type": "string", "format": "email" },
         "role": { "type": "string", "enum": ["parent", "teacher", "admin"] },
         "isActive": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "institutionId": { "type": "string" },
+        "institutionName": { "type": "string" },
+        "assignedGroups": { "type": "array", "items": { "type": "string" } }
       },
       "required": ["uid", "fullName", "email", "role"]
     },
@@ -31,9 +33,13 @@
         "medicalNotes": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "points": { "type": "number" },
-        "stars": { "type": "number" }
+        "stars": { "type": "number" },
+        "institutionId": { "type": "string" },
+        "institutionName": { "type": "string" },
+        "groupId": { "type": "string" },
+        "groupName": { "type": "string" }
       },
-      "required": ["id", "createdBy", "name", "teaLevel"]
+      "required": ["id", "createdBy", "name", "teaLevel", "institutionId", "groupId"]
     },
     "Assessment": {
       "title": "Initial Assessment",

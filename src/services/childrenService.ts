@@ -29,7 +29,6 @@ export const childrenService = {
     await setDoc(childRef, newChild);
 
     // 2. Crear relación de acceso DETERMINISTA (userId_childId)
-    // Esto es CRÍTICO para que las Security Rules funcionen con exists()
     const accessId = `${userId}_${childId}`;
     await setDoc(doc(db, 'child_access', accessId), {
       id: accessId,
@@ -44,26 +43,42 @@ export const childrenService = {
   },
 
   getChildrenForUser: async (userId: string) => {
-    // Buscar en child_access los IDs de los niños asociados al usuario
-    const accessQuery = query(
-      collection(db, 'child_access'), 
-      where('userId', '==', userId), 
-      where('isActive', '==', true)
-    );
-    const accessSnap = await getDocs(accessQuery);
-    const childIds = accessSnap.docs.map(d => d.data().childId);
+    // 1. Obtener perfil del usuario para saber su rol
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (!userDoc.exists()) return [];
+    
+    const userData = userDoc.data();
+    
+    if (userData.role === 'teacher') {
+      // 2a. Si es docente, buscar por institución y grupos asignados
+      const childrenQuery = query(
+        collection(db, 'children'),
+        where('institutionId', '==', userData.institutionId),
+        where('groupId', 'in', userData.assignedGroups)
+      );
+      const childrenSnap = await getDocs(childrenQuery);
+      return childrenSnap.docs.map(d => d.data());
+    } else {
+      // 2b. Si es padre, buscar por relaciones de acceso
+      const accessQuery = query(
+        collection(db, 'child_access'), 
+        where('userId', '==', userId), 
+        where('isActive', '==', true)
+      );
+      const accessSnap = await getDocs(accessQuery);
+      const childIds = accessSnap.docs.map(d => d.data().childId);
 
-    if (childIds.length === 0) return [];
+      if (childIds.length === 0) return [];
 
-    // Cargar los perfiles de los niños
-    const children: any[] = [];
-    for (const id of childIds) {
-      const childDoc = await getDoc(doc(db, 'children', id));
-      if (childDoc.exists()) {
-        children.push(childDoc.data());
+      const children: any[] = [];
+      for (const id of childIds) {
+        const childDoc = await getDoc(doc(db, 'children', id));
+        if (childDoc.exists()) {
+          children.push(childDoc.data());
+        }
       }
+      return children;
     }
-    return children;
   },
 
   getChildById: async (childId: string) => {

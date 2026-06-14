@@ -11,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 
 const INTERESTS = ['animales', 'música', 'colores', 'números', 'cuentos', 'rutinas', 'rompecabezas'];
 const LEARNING_STYLES = ['visual', 'auditivo', 'kinestésico', 'mixto'];
+const GROUPS = ['PED_1', 'PED_2', 'PED_3', 'PED_4', 'PED_5'];
 
 export default function CreateChildPage() {
   const router = useRouter();
@@ -24,6 +25,9 @@ export default function CreateChildPage() {
     interests: [] as string[],
     learningStyle: 'visual' as any,
     medicalNotes: '',
+    institutionId: 'la-uni',
+    institutionName: 'LA-UNI',
+    groupId: '',
   });
 
   const toggleInterest = (interest: string) => {
@@ -36,7 +40,10 @@ export default function CreateChildPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.name || !user || !db) return;
+    if (!formData.name || !formData.groupId || !user || !db) {
+      toast({ variant: "destructive", title: "Campos incompletos", description: "Por favor completa el nombre y selecciona un grupo." });
+      return;
+    }
     
     setLoading(true);
     const childId = Math.random().toString(36).substr(2, 9);
@@ -48,6 +55,7 @@ export default function CreateChildPage() {
         ...formData,
         id: childId,
         createdBy: user.uid,
+        groupName: formData.groupId,
         avatarUrl: `https://picsum.photos/seed/${formData.name}/200/200`,
         points: 0,
         stars: 0,
@@ -55,7 +63,6 @@ export default function CreateChildPage() {
       });
 
       // 2. Crear registro de acceso DETERMINISTA (userId_childId)
-      // Esto es CRÍTICO para que las Security Rules funcionen con exists()
       const accessId = `${user.uid}_${childId}`;
       await setDoc(doc(db, 'child_access', accessId), {
         id: accessId,
@@ -81,6 +88,29 @@ export default function CreateChildPage() {
       
       <div className="p-6 space-y-8">
         <AppCard className="p-6 space-y-6">
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-muted-foreground">Institución</label>
+            <AppInput 
+              value="LA-UNI" 
+              disabled={true}
+              className="bg-muted opacity-80"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-bold text-muted-foreground block">Grupo Académico</label>
+            <div className="flex flex-wrap gap-2">
+              {GROUPS.map((group) => (
+                <SelectChip
+                  key={group}
+                  label={group}
+                  selected={formData.groupId === group}
+                  onClick={() => setFormData({ ...formData, groupId: group })}
+                />
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-bold text-muted-foreground">Nombre Completo</label>
             <AppInput 

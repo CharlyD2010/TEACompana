@@ -39,6 +39,9 @@ export const authService = {
       fullName,
       email,
       role: 'teacher',
+      institutionId: 'la-uni',
+      institutionName: 'LA-UNI',
+      assignedGroups: ['PED_1', 'PED_2', 'PED_3', 'PED_4', 'PED_5'],
       isActive: true,
       createdAt: new Date().toISOString(),
     });
