@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -15,7 +16,7 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
     
-    // Verifica si el usuario tiene una relación activa con el niño
+    // Verifica si el usuario tiene una relación activa con el niño mediante child_access
     function hasAccess(childId) {
       let accessPath = /databases/$(database)/documents/child_access/$(request.auth.uid + "_" + childId);
       return exists(accessPath) && get(accessPath).data.isActive == true;
@@ -44,14 +45,14 @@ service cloud.firestore {
     
     // Reglas para Relaciones de Acceso
     match /child_access/{accessId} {
-      allow read: if isLoggedIn() && resource.data.userId == request.auth.uid;
+      allow read: if isLoggedIn() && (resource.data.userId == request.auth.uid || isOwner(accessId.split('_')[0]));
       allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if false; 
     }
     
     // Reglas para Niños y sus Subcolecciones
     match /children/{childId} {
-      // Un usuario puede leer si es el creador, tiene acceso concedido o es un docente autorizado
+      // Lectura permitida si es creador, tiene acceso o es docente autorizado
       allow read: if isLoggedIn() && (
         resource == null || 
         resource.data.createdBy == request.auth.uid || 
@@ -59,11 +60,12 @@ service cloud.firestore {
         hasTeacherAccess(childId)
       );
       
-      // Un usuario puede escribir si es el creador o tiene acceso concedido
+      // Escritura permitida si es creador, tiene acceso o es docente del grupo (para registrar progresos)
       allow write: if isLoggedIn() && (
         resource == null || 
         resource.data.createdBy == request.auth.uid || 
-        hasAccess(childId)
+        hasAccess(childId) ||
+        hasTeacherAccess(childId)
       );
       
       // Subcolecciones protegidas

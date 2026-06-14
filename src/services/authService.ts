@@ -1,9 +1,11 @@
+
 'use client';
 
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
-  signOut 
+  signOut,
+  updateProfile
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
@@ -19,6 +21,10 @@ export const authService = {
 
   registerParent: async (email: string, pass: string, fullName: string) => {
     const { user } = await createUserWithEmailAndPassword(auth, email, pass);
+    
+    // Actualizar nombre en Auth
+    await updateProfile(user, { displayName: fullName });
+
     const userRef = doc(db, 'users', user.uid);
     await setDoc(userRef, {
       uid: user.uid,
@@ -33,6 +39,10 @@ export const authService = {
 
   registerTeacher: async (email: string, pass: string, fullName: string) => {
     const { user } = await createUserWithEmailAndPassword(auth, email, pass);
+    
+    // Actualizar nombre en Auth
+    await updateProfile(user, { displayName: fullName });
+
     const userRef = doc(db, 'users', user.uid);
     await setDoc(userRef, {
       uid: user.uid,
@@ -49,6 +59,7 @@ export const authService = {
   },
 
   getUserProfile: async (uid: string) => {
+    if (!uid) return null;
     const docRef = doc(db, 'users', uid);
     const snap = await getDoc(docRef);
     return snap.exists() ? snap.data() : null;

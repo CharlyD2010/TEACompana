@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -44,6 +45,7 @@ export default function MyChildrenPage() {
   }
 
   const isTeacher = userProfile?.role === 'teacher';
+  const displayName = userProfile?.fullName || userProfile?.name || user?.displayName || 'Usuario';
   
   const filteredChildren = children.filter(child => {
     if (selectedGroup === 'Todos') return true;
@@ -61,23 +63,24 @@ export default function MyChildrenPage() {
       <div className="p-6 space-y-6">
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center">
-            <div>
-              <p className="text-muted-foreground font-bold text-xs uppercase">
-                {isTeacher ? `Docente: ${userProfile.institutionName}` : 'Perfiles registrados'}
+            <div className="space-y-1">
+              <p className="text-muted-foreground font-black text-[10px] uppercase tracking-widest">
+                {isTeacher ? `Docente: ${userProfile.institutionName || 'LA-UNI'}` : 'Padre / Tutor'}
               </p>
-              {isTeacher && <p className="text-[10px] font-black text-primary uppercase">Grupos asignados: {userProfile.assignedGroups?.join(', ')}</p>}
+              <h2 className="text-xl font-black text-primary leading-none">{displayName}</h2>
+              {isTeacher && <p className="text-[9px] font-bold text-muted-foreground uppercase">Grupos: {userProfile.assignedGroups?.join(', ')}</p>}
             </div>
-            <AppButton size="sm" onClick={() => router.push('/children/create')} className="bg-secondary hover:bg-secondary/90 text-secondary-foreground h-8 px-4 text-[10px] uppercase font-black">
-              <Plus className="w-3 h-3 mr-1" /> Nuevo Niño
+            <AppButton size="sm" onClick={() => router.push('/children/create')} className="bg-secondary hover:bg-secondary/90 text-secondary-foreground h-10 px-4 text-[10px] uppercase font-black">
+              <Plus className="w-4 h-4 mr-1" /> Nuevo Niño
             </AppButton>
           </div>
 
           {isTeacher && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase">
+            <div className="space-y-3 bg-white p-4 rounded-2xl shadow-sm border border-primary/5">
+              <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest">
                 <Filter className="w-3 h-3" /> Filtrar por Grupo
               </div>
-              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                 {GROUPS.map(group => (
                   <SelectChip
                     key={group}
@@ -93,8 +96,8 @@ export default function MyChildrenPage() {
 
         {filteredChildren.length === 0 ? (
           <EmptyState 
-            title="Sin perfiles" 
-            description={isTeacher ? `No hay niños registrados en el grupo ${selectedGroup}.` : "Aún no has registrado ningún niño. Crea un perfil para comenzar el seguimiento."} 
+            title={selectedGroup !== 'Todos' ? `Sin alumnos en ${selectedGroup}` : "Sin perfiles"} 
+            description={isTeacher ? `No hay niños registrados en el grupo ${selectedGroup} de la institución.` : "Aún no has registrado ningún niño. Crea un perfil para comenzar el seguimiento."} 
             actionLabel={!isTeacher ? "Agregar mi primer niño" : undefined}
             onAction={!isTeacher ? () => router.push('/children/create') : undefined}
           />
@@ -103,27 +106,27 @@ export default function MyChildrenPage() {
             {filteredChildren.map((child: any) => (
               <AppCard 
                 key={child.id} 
-                className="p-5 flex items-center gap-4 hover:ring-2 hover:ring-primary/30 transition-all cursor-pointer bg-white"
+                className="p-5 flex items-center gap-4 hover:ring-4 hover:ring-primary/10 transition-all cursor-pointer bg-white group border border-primary/5"
                 onClick={() => router.push(`/child/${child.id}/dashboard`)}
               >
-                <Avatar className="h-16 w-16 border-4 border-primary/10">
+                <Avatar className="h-16 w-16 border-4 border-primary/10 group-hover:border-primary/30 transition-colors">
                   <AvatarImage src={child.avatarUrl} />
                   <AvatarFallback className="bg-primary/5 text-primary text-xl font-black">
-                    {child.name.charAt(0)}
+                    {child.name?.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <h3 className="font-black text-lg text-primary">{child.name}</h3>
+                  <h3 className="font-black text-lg text-primary group-hover:translate-x-1 transition-transform">{child.name}</h3>
                   <div className="flex gap-2 mt-1">
-                    <span className="text-[10px] px-2 py-0.5 bg-secondary/20 text-secondary-foreground font-black rounded-full uppercase tracking-tight">
+                    <span className="text-[9px] px-2 py-0.5 bg-secondary/20 text-secondary-foreground font-black rounded-full uppercase tracking-tight">
                       {child.groupId || 'Sin Grupo'}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 bg-accent text-accent-foreground font-black rounded-full uppercase tracking-tight">
+                    <span className="text-[9px] px-2 py-0.5 bg-accent text-accent-foreground font-black rounded-full uppercase tracking-tight">
                       {child.points || 0} pts
                     </span>
                   </div>
                 </div>
-                <ChevronRight className="text-muted-foreground w-5 h-5" />
+                <ChevronRight className="text-muted-foreground w-6 h-6 opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
               </AppCard>
             ))}
           </div>
