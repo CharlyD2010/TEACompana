@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -50,7 +49,7 @@ export default function LoginPage() {
         <p className="text-muted-foreground font-bold uppercase text-xs tracking-widest mt-2">Juntos en el camino del aprendizaje</p>
       </div>
 
-      <AppCard className="w-full max-w-md p-8 bg-white/80 backdrop-blur-sm border-t-4 border-primary">
+      <AppCard className="w-full max-w-md p-8 bg-white/80 backdrop-blur-sm border-t-4 border-primary shadow-2xl">
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-muted-foreground uppercase ml-2 tracking-widest">Correo Electrónico</label>
@@ -65,7 +64,16 @@ export default function LoginPage() {
           </div>
           
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-muted-foreground uppercase ml-2 tracking-widest">Contraseña</label>
+            <div className="flex justify-between items-center ml-2">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Contraseña</label>
+              <button 
+                type="button"
+                onClick={() => router.push('/forgot-password')}
+                className="text-[9px] font-black text-primary uppercase tracking-widest hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
             <AppInput 
               type="password" 
               placeholder="••••••••" 

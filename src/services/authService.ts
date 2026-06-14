@@ -1,11 +1,11 @@
-
 'use client';
 
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut,
-  updateProfile
+  updateProfile,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
@@ -17,6 +17,10 @@ export const authService = {
 
   logout: async () => {
     return signOut(auth);
+  },
+
+  resetPassword: async (email: string) => {
+    return sendPasswordResetEmail(auth, email);
   },
 
   registerParent: async (email: string, pass: string, fullName: string) => {
