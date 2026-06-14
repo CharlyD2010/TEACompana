@@ -17,7 +17,6 @@ export const childrenService = {
     const childId = Math.random().toString(36).substr(2, 9);
     const childRef = doc(db, 'children', childId);
     
-    // Asegurar que siempre tenga institución y grupo
     const newChild = {
       ...childData,
       id: childId,
@@ -31,10 +30,9 @@ export const childrenService = {
       stars: childData.stars || 0,
     };
 
-    // 1. Crear el perfil del niño
     await setDoc(childRef, newChild);
 
-    // 2. Crear relación de acceso DETERMINISTA (userId_childId)
+    // Relación determinista
     const accessId = `${userId}_${childId}`;
     await setDoc(doc(db, 'child_access', accessId), {
       id: accessId,
@@ -49,28 +47,38 @@ export const childrenService = {
   },
 
   getChildrenForUser: async (userId: string) => {
-    // 1. Obtener perfil del usuario para saber su rol e institución
+    if (!db) return [];
+    
     const userDoc = await getDoc(doc(db, 'users', userId));
     if (!userDoc.exists()) return [];
     
     const userData = userDoc.data();
     
     if (userData.role === 'teacher') {
-      // 2a. Si es docente, buscar por institución y grupos asignados
-      // Esto permite ver niños creados por padres en la misma institución
+      // DOCENTE: Consulta institucional
       const institutionId = userData.institutionId || 'la-uni';
       const assignedGroups = userData.assignedGroups || ['PED_1', 'PED_2', 'PED_3', 'PED_4', 'PED_5'];
 
+      console.log(`[DOCENTE] Consultando alumnos para institución: ${institutionId}, grupos: ${assignedGroups.join(', ')}`);
+
+      // Consulta directa por institución
       const childrenQuery = query(
         collection(db, 'children'),
-        where('institutionId', '==', institutionId),
-        where('groupId', 'in', assignedGroups)
+        where('institutionId', '==', institutionId)
       );
       
       const childrenSnap = await getDocs(childrenQuery);
-      return childrenSnap.docs.map(d => d.data());
+      const allInstitutionalChildren = childrenSnap.docs.map(d => d.data());
+      
+      // Filtrado por grupos asignados en cliente para mayor fiabilidad
+      const filtered = allInstitutionalChildren.filter(child => 
+        assignedGroups.includes(child.groupId)
+      );
+
+      console.log(`[DOCENTE] Encontrados: ${allInstitutionalChildren.length}, Filtrados por grupo: ${filtered.length}`);
+      return filtered;
     } else {
-      // 2b. Si es padre, buscar por relaciones de acceso específicas
+      // PADRE: Consulta por child_access
       const accessQuery = query(
         collection(db, 'child_access'), 
         where('userId', '==', userId), 
@@ -81,7 +89,6 @@ export const childrenService = {
 
       if (childIds.length === 0) return [];
 
-      // Obtener perfiles de niños relacionados
       const children: any[] = [];
       for (const id of childIds) {
         const childDoc = await getDoc(doc(db, 'children', id));
@@ -94,7 +101,7 @@ export const childrenService = {
   },
 
   getChildById: async (childId: string) => {
-    if (!childId) return null;
+    if (!db || !childId) return null;
     const snap = await getDoc(doc(db, 'children', childId));
     return snap.exists() ? snap.data() : null;
   }

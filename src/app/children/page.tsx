@@ -4,16 +4,18 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppButton, AppCard, AppHeader, LoadingState, EmptyState, SelectChip } from '@/components/app-components';
-import { Plus, User, ChevronRight, Settings, Loader2, Filter } from 'lucide-react';
+import { Plus, ChevronRight, Settings, Filter, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { childrenService } from '@/services/childrenService';
 import { authService } from '@/services/authService';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 
 const GROUPS = ['Todos', 'PED_1', 'PED_2', 'PED_3', 'PED_4', 'PED_5'];
 
 export default function MyChildrenPage() {
   const router = useRouter();
+  const db = useFirestore();
   const { user, loading: userLoading } = useUser();
   const [children, setChildren] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -22,30 +24,51 @@ export default function MyChildrenPage() {
 
   useEffect(() => {
     async function loadData() {
-      if (user) {
+      if (user && db) {
         try {
-          const profile = await authService.getUserProfile(user.uid);
+          console.log(`[AUTH] Usuario autenticado: ${user.uid}`);
+          let profile = await authService.getUserProfile(user.uid);
+          
+          // Verificación y actualización automática de perfil docente
+          if (profile?.role === 'teacher' && (!profile.institutionId || !profile.assignedGroups)) {
+            console.log("[AUTH] Actualizando perfil docente incompleto...");
+            const teacherUpdate = {
+              institutionId: "la-uni",
+              institutionName: "LA-UNI",
+              assignedGroups: ["PED_1", "PED_2", "PED_3", "PED_4", "PED_5"]
+            };
+            await updateDoc(doc(db, 'users', user.uid), teacherUpdate);
+            profile = { ...profile, ...teacherUpdate };
+          }
+          
           setUserProfile(profile);
+          console.log(`[PROFILE] Rol: ${profile?.role}, Nombre: ${profile?.fullName}`);
+
           const data = await childrenService.getChildrenForUser(user.uid);
           setChildren(data);
         } catch (e) {
-          console.error("Error loading children", e);
+          console.error("[ERROR] Error loading children", e);
         } finally {
           setLoading(false);
         }
-      } else if (!userLoading) {
+      } else if (!userLoading && !user) {
         router.push('/');
       }
     }
     loadData();
-  }, [user, userLoading, router]);
+  }, [user, userLoading, db, router]);
+
+  const handleLogout = async () => {
+    await authService.logout();
+    router.push('/');
+  };
 
   if (loading || userLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><LoadingState /></div>;
   }
 
   const isTeacher = userProfile?.role === 'teacher';
-  const displayName = userProfile?.fullName || userProfile?.name || user?.displayName || 'Usuario';
+  const displayName = userProfile?.fullName || user?.displayName || 'Usuario';
   
   const filteredChildren = children.filter(child => {
     if (selectedGroup === 'Todos') return true;
@@ -55,20 +78,25 @@ export default function MyChildrenPage() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <AppHeader title="Mis Niños" showBack={false}>
-        <AppButton variant="ghost" size="icon" className="rounded-full" onClick={() => router.push('/settings')}>
-          <Settings className="h-5 w-5" />
-        </AppButton>
+        <div className="flex gap-2">
+          <AppButton variant="ghost" size="icon" className="rounded-full" onClick={() => router.push('/settings')}>
+            <Settings className="h-5 w-5" />
+          </AppButton>
+          <AppButton variant="ghost" size="icon" className="rounded-full text-destructive" onClick={handleLogout}>
+            <LogOut className="h-5 w-5" />
+          </AppButton>
+        </div>
       </AppHeader>
 
       <div className="p-6 space-y-6">
         <div className="flex flex-col gap-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-start">
             <div className="space-y-1">
               <p className="text-muted-foreground font-black text-[10px] uppercase tracking-widest">
-                {isTeacher ? `Docente: ${userProfile.institutionName || 'LA-UNI'}` : 'Padre / Tutor'}
+                {isTeacher ? `Docente: ${userProfile?.institutionName || 'LA-UNI'}` : 'Padre / Tutor'}
               </p>
-              <h2 className="text-xl font-black text-primary leading-none">{displayName}</h2>
-              {isTeacher && <p className="text-[9px] font-bold text-muted-foreground uppercase">Grupos: {userProfile.assignedGroups?.join(', ')}</p>}
+              <h2 className="text-2xl font-black text-primary leading-none">{displayName}</h2>
+              {isTeacher && <p className="text-[9px] font-bold text-muted-foreground uppercase">Grupos asignados: {userProfile?.assignedGroups?.join(', ')}</p>}
             </div>
             <AppButton size="sm" onClick={() => router.push('/children/create')} className="bg-secondary hover:bg-secondary/90 text-secondary-foreground h-10 px-4 text-[10px] uppercase font-black">
               <Plus className="w-4 h-4 mr-1" /> Nuevo Niño

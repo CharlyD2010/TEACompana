@@ -29,12 +29,10 @@ service cloud.firestore {
     }
     
     // Verifica si el docente tiene acceso institucional al niño
-    function hasTeacherAccess(childId) {
-      let childData = get(/databases/$(database)/documents/children/$(childId)).data;
+    // Permite lectura si es docente y coincide la institución
+    function isTeacherOfInstitution(institutionId) {
       let userData = getUserData();
-      return userData.role == 'teacher' && 
-             childData.institutionId == userData.institutionId && 
-             childData.groupId in userData.assignedGroups;
+      return userData.role == 'teacher' && userData.institutionId == institutionId;
     }
     
     // Reglas para Perfiles de Usuario
@@ -52,28 +50,36 @@ service cloud.firestore {
     
     // Reglas para Niños y sus Subcolecciones
     match /children/{childId} {
-      // Lectura permitida si es creador, tiene acceso o es docente autorizado
+      // Lectura permitida si es creador, tiene acceso o es docente de la institución
       allow read: if isLoggedIn() && (
-        resource == null || 
-        resource.data.createdBy == request.auth.uid || 
+        (resource != null && resource.data.createdBy == request.auth.uid) || 
         hasAccess(childId) || 
-        hasTeacherAccess(childId)
+        (resource != null && isTeacherOfInstitution(resource.data.institutionId)) ||
+        (resource == null) // Para creación
       );
       
-      // Escritura permitida si es creador, tiene acceso o es docente del grupo (para registrar progresos)
+      // Escritura permitida si es creador, tiene acceso o es docente institucional
       allow write: if isLoggedIn() && (
-        resource == null || 
+        (resource == null) || 
         resource.data.createdBy == request.auth.uid || 
         hasAccess(childId) ||
-        hasTeacherAccess(childId)
+        isTeacherOfInstitution(resource.data.institutionId)
       );
       
       // Subcolecciones protegidas
-      match /assessments/{id} { allow read, write: if isLoggedIn() && (isCreator(childId) || hasAccess(childId) || hasTeacherAccess(childId)); }
-      match /learning_plans/{id} { allow read, write: if isLoggedIn() && (isCreator(childId) || hasAccess(childId) || hasTeacherAccess(childId)); }
-      match /game_sessions/{id} { allow read, write: if isLoggedIn() && (isCreator(childId) || hasAccess(childId) || hasTeacherAccess(childId)); }
-      match /game_progress/{id} { allow read, write: if isLoggedIn() && (isCreator(childId) || hasAccess(childId) || hasTeacherAccess(childId)); }
-      match /child_rewards/{id} { allow read, write: if isLoggedIn() && (isCreator(childId) || hasAccess(childId) || hasTeacherAccess(childId)); }
+      // Se permite acceso si el usuario tiene permiso sobre el documento padre (niño)
+      function canAccessChildData(childId) {
+        let childData = get(/databases/$(database)/documents/children/$(childId)).data;
+        return childData.createdBy == request.auth.uid || 
+               hasAccess(childId) || 
+               isTeacherOfInstitution(childData.institutionId);
+      }
+
+      match /assessments/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
+      match /learning_plans/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
+      match /game_sessions/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
+      match /game_progress/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
+      match /child_rewards/{id} { allow read, write: if isLoggedIn() && canAccessChildData(childId); }
     }
     
     match /rewards/{rewardId} {
