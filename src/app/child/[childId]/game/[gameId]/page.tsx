@@ -1,11 +1,11 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AppButton } from '@/components/app-components';
-import { CheckCircle2, XCircle, Loader2, X, LayoutDashboard, Users, BookOpen } from 'lucide-react';
-import { useFirestore, useUser } from '@/firebase';
+import { AppButton, LoadingState } from '@/components/app-components';
+import { CheckCircle2, XCircle, Loader2, X, LayoutDashboard, Users, BookOpen, Star, Trophy } from 'lucide-react';
+import { useFirestore, useUser, useDoc } from '@/firebase';
 import { doc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -37,6 +37,7 @@ const GAME_DATA: Record<string, any> = {
     questions: [
       { id: 1, text: 'Selecciona el color ROJO', options: ['🔴', '🔵', '🟢', '🟡'], correct: 0 },
       { id: 2, text: 'Selecciona el color AZUL', options: ['🔴', '🔵', '🟢', '🟡'], correct: 1 },
+      { id: 3, text: 'Selecciona el color VERDE', options: ['🔴', '🔵', '🟢', '🟡'], correct: 2 },
     ]
   },
   g3: {
@@ -45,6 +46,63 @@ const GAME_DATA: Record<string, any> = {
     questions: [
       { id: 1, text: '¿Cuántas manzanas hay? 🍎 🍎', options: ['1', '2', '3', '4'], correct: 1 },
       { id: 2, text: '¿Cuántas estrellas hay? ⭐ ⭐ ⭐', options: ['2', '3', '4', '5'], correct: 1 },
+      { id: 3, text: '¿Cuántos lápices hay? ✏️ ✏️ ✏️ ✏️', options: ['3', '4', '5', '6'], correct: 1 },
+    ]
+  },
+  g4: {
+    name: 'Pasos de la Mañana',
+    area: 'Rutinas',
+    questions: [
+      { id: 1, text: '¿Qué hacemos PRIMERO?', options: ['🛌 Despertar', '🦷 Lavar dientes', '👕 Vestirse', '🥣 Desayunar'], correct: 0 },
+      { id: 2, text: '¿Qué hacemos antes de SALIR?', options: ['👟 Poner zapatos', '🛌 Dormir', '🚿 Bañarse', '🍎 Cenar'], correct: 0 },
+    ]
+  },
+  g5: {
+    name: 'Palabra e Imagen',
+    area: 'Comunicación',
+    questions: [
+      { id: 1, text: '¿Cuál es el PERRO?', options: ['🐶', '🐱', '🐮', '🐷'], correct: 0 },
+      { id: 2, text: '¿Cuál es la MANZANA?', options: ['🍌', '🍎', '🍇', '🍉'], correct: 1 },
+    ]
+  },
+  g6: {
+    name: 'Sonidos de Animales',
+    area: 'Animales',
+    questions: [
+      { id: 1, text: '¿Quién hace "GUAU GUAU"?', options: ['🐶', '🐱', '🐮', '🐔'], correct: 0 },
+      { id: 2, text: '¿Quién hace "MUUUU"?', options: ['🐷', '🐮', '🐴', '🐑'], correct: 1 },
+    ]
+  },
+  g7: {
+    name: 'Identificar Objetos',
+    area: 'Comunicación',
+    questions: [
+      { id: 1, text: '¿Cuál se usa para BEBER?', options: ['🪑', '🥤', '📱', '🚲'], correct: 1 },
+      { id: 2, text: '¿Cuál se usa para SENTARSE?', options: ['🛌', '🪑', '📚', '🥣'], correct: 1 },
+    ]
+  },
+  g8: {
+    name: 'Memoria Visual',
+    area: 'Memoria',
+    questions: [
+      { id: 1, text: '¿Qué animal vimos hace un momento? (🐶)', options: ['🐱', '🐷', '🐶', '🐮'], correct: 2 },
+      { id: 2, text: '¿De qué color era el globo? (🎈)', options: ['🔵', '🟢', '🔴', '🟡'], correct: 2 },
+    ]
+  },
+  g14: {
+    name: 'Hábitos de Higiene',
+    area: 'Higiene',
+    questions: [
+      { id: 1, text: '¿Qué usamos para lavarnos las MANOS?', options: ['🧼 Jabón', '🪮 Peine', '👟 Zapato', '🥄 Cuchara'], correct: 0 },
+      { id: 2, text: '¿Qué usamos para lavarnos los DIENTES?', options: ['🧼 Jabón', '🦷 Cepillo', '🧴 Crema', '🧻 Papel'], correct: 1 },
+    ]
+  },
+  g15: {
+    name: 'Seguridad Básica',
+    area: 'Seguridad',
+    questions: [
+      { id: 1, text: '¿Qué color del semáforo significa PARAR?', options: ['🔴', '🟡', '🟢', '⚪'], correct: 0 },
+      { id: 2, text: '¿Qué color significa que podemos CRUZAR?', options: ['🔴', '🟡', '🟢', '⚪'], correct: 2 },
     ]
   }
 };
@@ -121,7 +179,7 @@ export default function GamePlayPage() {
         gameId,
         gameName: game.name,
         stars: stars,
-        points: finalCorrect * 10,
+        points: increment(finalCorrect * 10),
         updatedAt: serverTimestamp(),
       }, { merge: true });
 
@@ -144,80 +202,75 @@ export default function GamePlayPage() {
 
   if (isFinishing) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background space-y-4">
-        <Loader2 className="w-12 h-12 text-primary animate-spin" />
-        <p className="font-black text-primary uppercase animate-pulse">Guardando resultados...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background space-y-6">
+        <Trophy className="w-20 h-20 text-accent animate-bounce" />
+        <div className="text-center space-y-2">
+          <h2 className="text-3xl font-black text-primary uppercase tracking-tighter">¡Lo lograste!</h2>
+          <p className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Guardando tus resultados...</p>
+        </div>
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <div className="p-6 flex items-center justify-between">
-        <div className="space-y-1">
-          <h2 className="font-black text-primary uppercase tracking-tight leading-none">{game.name}</h2>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">{game.area}</p>
-        </div>
-        
+      {/* Game Header */}
+      <div className="p-6 flex items-center justify-between bg-white border-b-2 border-muted/50">
         <div className="flex items-center gap-4">
-          <div className="text-sm font-black bg-white px-4 py-1 rounded-full shadow-sm border-2 border-primary/10">
-            {currentIdx + 1} / {game.questions.length}
-          </div>
-
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <AppButton variant="ghost" size="icon" className="rounded-full text-destructive hover:bg-destructive/10">
-                <X className="w-5 h-5" />
-              </AppButton>
+              <button className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
+                <X className="w-6 h-6" />
+              </button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="rounded-[2rem]">
+            <AlertDialogContent className="rounded-[2.5rem] border-none">
               <AlertDialogHeader>
-                <AlertDialogTitle className="font-black text-primary uppercase text-xl">¿Seguro que deseas salir?</AlertDialogTitle>
+                <AlertDialogTitle className="text-2xl font-black text-primary uppercase tracking-tighter">¿Seguro que deseas salir?</AlertDialogTitle>
                 <AlertDialogDescription className="text-muted-foreground font-medium">
-                  El progreso de esta partida no se guardará si sales ahora.
+                  Si sales ahora no se guardarán tus puntos de esta partida.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter className="flex flex-col gap-2">
-                <div className="flex gap-2 w-full">
-                  <AlertDialogCancel className="flex-1 rounded-full font-black uppercase text-[10px]">Continuar jugando</AlertDialogCancel>
-                </div>
-                <div className="grid grid-cols-1 gap-2 w-full">
-                  <AlertDialogAction 
-                    className="w-full rounded-full font-black uppercase text-[10px] bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
-                    onClick={() => router.push(`/child/${childId}/activities`)}
-                  >
-                    <BookOpen className="w-3 h-3" /> Salir a Actividades
-                  </AlertDialogAction>
-                  <AlertDialogAction 
-                    className="w-full rounded-full font-black uppercase text-[10px] bg-secondary text-secondary-foreground hover:bg-secondary/90 gap-2"
-                    onClick={() => router.push(`/child/${childId}/dashboard`)}
-                  >
-                    <LayoutDashboard className="w-3 h-3" /> Salir al Dashboard
-                  </AlertDialogAction>
-                  <AlertDialogAction 
-                    className="w-full rounded-full font-black uppercase text-[10px] bg-destructive text-white hover:bg-destructive/90 gap-2"
-                    onClick={() => router.push('/children')}
-                  >
-                    <Users className="w-3 h-3" /> Salir a Mis Niños
-                  </AlertDialogAction>
-                </div>
+              <AlertDialogFooter className="flex flex-col gap-3 mt-4">
+                <AppButton className="w-full h-14 text-lg" onClick={() => router.push(`/child/${childId}/activities`)}>
+                  Sí, quiero salir
+                </AppButton>
+                <AlertDialogCancel className="w-full h-12 rounded-2xl font-black uppercase text-[10px] border-2">
+                  Seguir jugando
+                </AlertDialogCancel>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          <div className="space-y-1">
+            <h2 className="font-black text-primary uppercase tracking-tight leading-none text-lg">{game.name}</h2>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{game.area}</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <div className="text-xs font-black bg-primary/10 text-primary px-4 py-2 rounded-full border-2 border-primary/10">
+            {currentIdx + 1} / {game.questions.length}
+          </div>
         </div>
       </div>
 
+      {/* Main Game Area */}
       <div className="flex-1 p-6 flex flex-col items-center justify-center space-y-12">
-        <div className="text-center space-y-4 max-w-md">
-          <h1 className="text-4xl font-black leading-tight text-primary">{currentQ.text}</h1>
+        <div className="text-center space-y-6 max-w-xl">
+          <div className="w-24 h-24 bg-white rounded-[2rem] shadow-2xl flex items-center justify-center mx-auto border-4 border-primary/20">
+            <span className="text-5xl">{currentQ.options[currentQ.correct]}</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black leading-tight text-primary tracking-tight">
+            {currentQ.text}
+          </h1>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 w-full max-w-lg">
+        <div className="grid grid-cols-2 gap-6 w-full max-w-2xl">
           {currentQ.options.map((opt: string, i: number) => (
             <button 
               key={i} 
               onClick={() => handleOption(i)} 
-              className={`h-44 text-7xl bg-white rounded-[3rem] shadow-xl border-4 border-transparent active:scale-95 transition-all hover:bg-muted/50 flex items-center justify-center
+              className={`h-48 md:h-60 text-6xl md:text-8xl bg-white rounded-[3rem] shadow-xl border-8 border-transparent active:scale-95 transition-all hover:bg-muted/30 flex items-center justify-center
                 ${feedback === 'correct' && i === currentQ.correct ? 'border-secondary bg-secondary/10 scale-105' : ''}
                 ${feedback === 'wrong' && i !== currentQ.correct ? 'opacity-50 grayscale' : ''}
               `}
@@ -229,17 +282,18 @@ export default function GamePlayPage() {
         </div>
       </div>
 
+      {/* Visual Feedback Overlay */}
       {feedback && (
         <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md z-[100] animate-in fade-in duration-300">
-          <div className="flex flex-col items-center gap-6">
-            <div className={`p-8 rounded-full shadow-2xl ${feedback === 'correct' ? 'bg-secondary' : 'bg-destructive'}`}>
+          <div className="flex flex-col items-center gap-8 bg-white/80 p-16 rounded-[4rem] shadow-2xl border-4 border-white">
+            <div className={`p-10 rounded-full shadow-2xl ${feedback === 'correct' ? 'bg-secondary' : 'bg-destructive'}`}>
               {feedback === 'correct' ? (
                 <CheckCircle2 className="w-24 h-24 text-white animate-bounce" />
               ) : (
-                <XCircle className="w-24 h-24 text-white" />
+                <XCircle className="w-24 h-24 text-white animate-pulse" />
               )}
             </div>
-            <h3 className={`text-5xl font-black uppercase tracking-widest ${feedback === 'correct' ? 'text-secondary' : 'text-destructive'}`}>
+            <h3 className={`text-6xl font-black uppercase tracking-[0.2em] ${feedback === 'correct' ? 'text-secondary' : 'text-destructive'}`}>
               {feedback === 'correct' ? '¡Muy Bien!' : '¡Casi!'}
             </h3>
           </div>

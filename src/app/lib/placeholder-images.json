@@ -1,3 +1,4 @@
+
 {
   "placeholderImages": [
     {
@@ -35,6 +36,24 @@
       "description": "Daily routine illustration",
       "imageUrl": "https://picsum.photos/seed/routines/400/300",
       "imageHint": "daily routine"
+    },
+    {
+      "id": "game-animals",
+      "description": "Friendly farm animals",
+      "imageUrl": "https://picsum.photos/seed/farm/400/300",
+      "imageHint": "farm animals"
+    },
+    {
+      "id": "game-memory",
+      "description": "Memory card game",
+      "imageUrl": "https://picsum.photos/seed/memory/400/300",
+      "imageHint": "memory cards"
+    },
+    {
+      "id": "game-hygiene",
+      "description": "Washing hands and hygiene",
+      "imageUrl": "https://picsum.photos/seed/hygiene/400/300",
+      "imageHint": "washing hands"
     }
   ]
 }
