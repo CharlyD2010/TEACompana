@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -9,6 +10,7 @@
         "fullName": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "role": { "type": "string", "enum": ["parent", "teacher", "admin"] },
+        "avatarKey": { "type": "string" },
         "isActive": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
         "institutionId": { "type": "string" },
@@ -30,6 +32,7 @@
         "interests": { "type": "array", "items": { "type": "string" } },
         "learningStyle": { "type": "string", "enum": ["visual", "auditivo", "kinestésico", "mixto"] },
         "avatarUrl": { "type": "string" },
+        "avatarKey": { "type": "string" },
         "medicalNotes": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "points": { "type": "number" },

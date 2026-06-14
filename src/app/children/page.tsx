@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -9,6 +10,7 @@ import { childrenService } from '@/services/childrenService';
 import { authService } from '@/services/authService';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
+import { getAvatarEmoji } from '@/lib/avatars';
 
 const GROUPS = ['Todos', 'PED_1', 'PED_2', 'PED_3', 'PED_4', 'PED_5'];
 
@@ -86,8 +88,8 @@ export default function MyChildrenPage() {
         {/* Profile Summary Header */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-8 rounded-[3rem] shadow-xl shadow-black/5">
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center text-primary shadow-inner">
-              <UserIcon className="w-10 h-10" />
+            <div className="w-20 h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center text-primary shadow-inner text-4xl">
+              {userProfile?.avatarKey ? getAvatarEmoji(userProfile.avatarKey) : <UserIcon className="w-10 h-10" />}
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.2em]">
@@ -146,12 +148,9 @@ export default function MyChildrenPage() {
                   className="p-6 flex items-center gap-6 hover:translate-y-[-4px] transition-all cursor-pointer bg-white group shadow-xl hover:shadow-primary/10 border-2 border-transparent hover:border-primary/20"
                   onClick={() => router.push(`/child/${child.id}/dashboard`)}
                 >
-                  <Avatar className="h-20 w-20 border-[6px] border-primary/5 group-hover:border-primary/20 transition-all duration-500 shadow-lg">
-                    <AvatarImage src={child.avatarUrl} />
-                    <AvatarFallback className="bg-primary/5 text-primary text-2xl font-black">
-                      {child.name?.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="h-20 w-20 rounded-[2rem] bg-primary/5 flex items-center justify-center text-4xl shadow-inner group-hover:bg-primary/10 transition-colors">
+                    {child.avatarKey ? getAvatarEmoji(child.avatarKey) : child.name?.charAt(0)}
+                  </div>
                   <div className="flex-1 space-y-2">
                     <h3 className="font-black text-xl text-primary leading-tight tracking-tight group-hover:translate-x-1 transition-transform">{child.name}</h3>
                     <div className="flex flex-wrap gap-2">

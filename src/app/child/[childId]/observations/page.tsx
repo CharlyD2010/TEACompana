@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -7,6 +8,7 @@ import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
 import { doc, collection, query, orderBy, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { Send, LayoutDashboard, Users, User, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { getAvatarEmoji } from '@/lib/avatars';
 
 export default function ObservationsChatPage() {
   const { childId } = useParams();
@@ -53,6 +55,7 @@ export default function ObservationsChatPage() {
         senderId: user.uid,
         senderName: userData.fullName || 'Usuario',
         senderRole: userData.role,
+        senderAvatarKey: userData.avatarKey || null,
         message: message.trim(),
         createdAt: serverTimestamp(),
       });
@@ -75,11 +78,11 @@ export default function ObservationsChatPage() {
         childId={childId as string}
       />
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4" ref={scrollRef}>
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6" ref={scrollRef}>
         {!messages || messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
-            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
-              <User className="w-10 h-10 text-muted-foreground opacity-30" />
+            <div className="w-24 h-24 bg-muted rounded-[2rem] flex items-center justify-center">
+              <User className="w-12 h-12 text-muted-foreground opacity-20" />
             </div>
             <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Aún no hay mensajes sobre {child?.name}</p>
           </div>
@@ -90,30 +93,35 @@ export default function ObservationsChatPage() {
               <div 
                 key={msg.id} 
                 className={cn(
-                  "flex flex-col max-w-[85%] md:max-w-[70%] space-y-1",
-                  isMe ? "ml-auto items-end" : "mr-auto items-start"
+                  "flex items-start gap-3 max-w-[90%] md:max-w-[75%]",
+                  isMe ? "ml-auto flex-row-reverse" : "mr-auto"
                 )}
               >
-                <div className="flex items-center gap-2 px-2">
-                  <span className="text-[8px] font-black uppercase text-muted-foreground tracking-tighter">
-                    {msg.senderName} • {msg.senderRole === 'teacher' ? 'DOCENTE' : 'PADRE'}
-                  </span>
+                <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl shadow-sm flex-shrink-0">
+                  {msg.senderAvatarKey ? getAvatarEmoji(msg.senderAvatarKey) : <User className="w-5 h-5 opacity-40" />}
                 </div>
-                <div 
-                  className={cn(
-                    "p-4 rounded-[2rem] text-sm font-medium shadow-sm",
-                    isMe 
-                      ? "bg-primary text-white rounded-tr-none" 
-                      : "bg-white text-foreground rounded-tl-none"
-                  )}
-                >
-                  {msg.message}
-                </div>
-                <div className="px-2 flex items-center gap-1 opacity-50">
-                  <Clock className="w-2 h-2" />
-                  <span className="text-[7px] font-black uppercase">
-                    {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
-                  </span>
+                <div className={cn("flex flex-col space-y-1", isMe ? "items-end" : "items-start")}>
+                  <div className="flex items-center gap-2 px-1">
+                    <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">
+                      {msg.senderName} • {msg.senderRole === 'teacher' ? 'DOCENTE' : 'PADRE'}
+                    </span>
+                  </div>
+                  <div 
+                    className={cn(
+                      "p-4 rounded-[1.8rem] text-sm font-medium shadow-md leading-relaxed",
+                      isMe 
+                        ? "bg-primary text-white rounded-tr-none" 
+                        : "bg-white text-foreground rounded-tl-none"
+                    )}
+                  >
+                    {msg.message}
+                  </div>
+                  <div className="px-2 flex items-center gap-1 opacity-40">
+                    <Clock className="w-2 h-2" />
+                    <span className="text-[7px] font-black uppercase tracking-tighter">
+                      {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
+                    </span>
+                  </div>
                 </div>
               </div>
             );
@@ -121,39 +129,24 @@ export default function ObservationsChatPage() {
         )}
       </div>
 
-      <div className="p-4 md:p-6 bg-white border-t border-muted/50 safe-area-bottom">
+      <div className="p-4 md:p-6 bg-white border-t border-muted/50 safe-area-bottom shadow-2xl">
         <form onSubmit={handleSend} className="flex gap-3 max-w-4xl mx-auto">
           <input 
             type="text" 
             placeholder="Escribe un mensaje..."
-            className="flex-1 h-14 bg-muted/30 rounded-2xl px-6 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+            className="flex-1 h-14 bg-muted/30 rounded-2xl px-6 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50"
             value={message}
             onChange={e => setMessage(e.target.value)}
             disabled={sending}
           />
           <AppButton 
             type="submit" 
-            className="w-14 h-14 p-0 rounded-2xl bg-secondary hover:bg-secondary/90 text-secondary-foreground" 
+            className="w-14 h-14 p-0 rounded-2xl bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-lg" 
             disabled={sending || !message.trim()}
           >
             <Send className="w-5 h-5" />
           </AppButton>
         </form>
-        
-        <div className="mt-4 flex flex-col md:flex-row gap-3 justify-center">
-          <button 
-            onClick={() => router.push(`/child/${childId}/dashboard`)}
-            className="flex items-center justify-center gap-2 text-[9px] font-black text-muted-foreground uppercase hover:text-primary transition-colors py-2"
-          >
-            <LayoutDashboard className="w-3 h-3" /> Dashboard
-          </button>
-          <button 
-            onClick={() => router.push('/children')}
-            className="flex items-center justify-center gap-2 text-[9px] font-black text-muted-foreground uppercase hover:text-primary transition-colors py-2"
-          >
-            <Users className="w-3 h-3" /> Mis Niños
-          </button>
-        </div>
       </div>
     </div>
   );

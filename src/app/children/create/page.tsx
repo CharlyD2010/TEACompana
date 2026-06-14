@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -8,6 +9,7 @@ import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { AvatarSelector } from '@/components/AvatarSelector';
 
 const INTERESTS = ['animales', 'música', 'colores', 'números', 'cuentos', 'rutinas', 'rompecabezas'];
 const LEARNING_STYLES = ['visual', 'auditivo', 'kinestésico', 'mixto'];
@@ -28,6 +30,7 @@ export default function CreateChildPage() {
     institutionId: 'la-uni',
     institutionName: 'LA-UNI',
     groupId: '',
+    avatarKey: 'cat',
   });
 
   const toggleInterest = (interest: string) => {
@@ -50,7 +53,6 @@ export default function CreateChildPage() {
     const childRef = doc(db, 'children', childId);
 
     try {
-      // 1. Crear el perfil del niño
       await setDoc(childRef, {
         ...formData,
         id: childId,
@@ -62,7 +64,6 @@ export default function CreateChildPage() {
         createdAt: new Date().toISOString(),
       });
 
-      // 2. Crear registro de acceso DETERMINISTA (userId_childId)
       const accessId = `${user.uid}_${childId}`;
       await setDoc(doc(db, 'child_access', accessId), {
         id: accessId,
@@ -86,10 +87,18 @@ export default function CreateChildPage() {
     <div className="min-h-screen bg-background pb-20">
       <AppHeader title="Registrar Niño" />
       
-      <div className="p-6 space-y-8">
-        <AppCard className="p-6 space-y-6">
+      <div className="p-6 space-y-8 max-w-2xl mx-auto">
+        <AppCard className="p-6 space-y-8">
+          <div className="space-y-4">
+            <label className="text-xs font-black text-primary uppercase tracking-widest block ml-2">Elige un Avatar</label>
+            <AvatarSelector 
+              selectedKey={formData.avatarKey} 
+              onSelect={(key) => setFormData({ ...formData, avatarKey: key })} 
+            />
+          </div>
+
           <div className="space-y-2">
-            <label className="text-sm font-bold text-muted-foreground">Institución</label>
+            <label className="text-xs font-black text-primary uppercase tracking-widest block ml-2">Institución</label>
             <AppInput 
               value="LA-UNI" 
               disabled={true}
@@ -98,7 +107,7 @@ export default function CreateChildPage() {
           </div>
 
           <div className="space-y-3">
-            <label className="text-sm font-bold text-muted-foreground block">Grupo Académico</label>
+            <label className="text-xs font-black text-primary uppercase tracking-widest block ml-2">Grupo Académico</label>
             <div className="flex flex-wrap gap-2">
               {GROUPS.map((group) => (
                 <SelectChip
@@ -112,7 +121,7 @@ export default function CreateChildPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-muted-foreground">Nombre Completo</label>
+            <label className="text-xs font-black text-primary uppercase tracking-widest block ml-2">Nombre Completo</label>
             <AppInput 
               placeholder="Ej. Juan Pérez" 
               value={formData.name}
@@ -122,7 +131,7 @@ export default function CreateChildPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-muted-foreground">Fecha de Nacimiento</label>
+            <label className="text-xs font-black text-primary uppercase tracking-widest block ml-2">Fecha de Nacimiento</label>
             <AppInput 
               type="date" 
               value={formData.birthDate}
@@ -132,7 +141,7 @@ export default function CreateChildPage() {
           </div>
 
           <div className="space-y-3">
-            <label className="text-sm font-bold text-muted-foreground block">Nivel de TEA</label>
+            <label className="text-xs font-black text-primary uppercase tracking-widest block ml-2">Nivel de TEA</label>
             <div className="flex gap-2">
               {['leve', 'moderado', 'severo'].map((level) => (
                 <SelectChip
@@ -146,7 +155,7 @@ export default function CreateChildPage() {
           </div>
 
           <div className="space-y-3">
-            <label className="text-sm font-bold text-muted-foreground block">Intereses</label>
+            <label className="text-xs font-black text-primary uppercase tracking-widest block ml-2">Intereses</label>
             <div className="flex flex-wrap gap-2">
               {INTERESTS.map((interest) => (
                 <SelectChip
@@ -160,7 +169,7 @@ export default function CreateChildPage() {
           </div>
 
           <div className="space-y-3">
-            <label className="text-sm font-bold text-muted-foreground block">Estilo de Aprendizaje</label>
+            <label className="text-xs font-black text-primary uppercase tracking-widest block ml-2">Estilo de Aprendizaje</label>
             <div className="flex flex-wrap gap-2">
               {LEARNING_STYLES.map((style) => (
                 <SelectChip
@@ -174,17 +183,17 @@ export default function CreateChildPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-muted-foreground">Notas Médicas (Opcional)</label>
+            <label className="text-xs font-black text-primary uppercase tracking-widest block ml-2">Notas Médicas</label>
             <Textarea 
               placeholder="Alergias, medicamentos, detonantes..." 
-              className="rounded-xl border-2 min-h-[100px]"
+              className="rounded-2xl border-2 min-h-[100px] font-bold text-sm"
               value={formData.medicalNotes}
               onChange={e => setFormData({ ...formData, medicalNotes: e.target.value })}
               disabled={loading}
             />
           </div>
 
-          <AppButton className="w-full h-14 text-lg" onClick={handleSave} disabled={loading}>
+          <AppButton className="w-full h-16 text-lg" onClick={handleSave} disabled={loading}>
             {loading ? <Loader2 className="animate-spin" /> : "Guardar Perfil"}
           </AppButton>
         </AppCard>

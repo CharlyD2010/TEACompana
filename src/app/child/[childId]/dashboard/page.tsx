@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -8,6 +9,7 @@ import { Play, ClipboardList, BookOpen, BarChart3, Trophy, Target, Loader2, Aler
 import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { authService } from '@/services/authService';
+import { getAvatarEmoji } from '@/lib/avatars';
 
 export default function ChildDashboardPage() {
   const router = useRouter();
@@ -68,10 +70,9 @@ export default function ChildDashboardPage() {
         {/* Profile Card */}
         <AppCard className="p-8 bg-primary text-white relative overflow-hidden group shadow-2xl shadow-primary/20">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
-            <Avatar className="h-32 w-32 border-[6px] border-white/20 shadow-2xl ring-4 ring-white/10 group-hover:scale-105 transition-transform duration-500">
-              <AvatarImage src={child.avatarUrl} />
-              <AvatarFallback className="bg-white/20 text-white text-4xl font-black">{child.name[0]}</AvatarFallback>
-            </Avatar>
+            <div className="h-32 w-32 border-[6px] border-white/20 shadow-2xl ring-4 ring-white/10 rounded-[2.5rem] bg-white/10 flex items-center justify-center text-6xl group-hover:scale-105 transition-transform duration-500">
+              {child.avatarKey ? getAvatarEmoji(child.avatarKey) : child.name[0]}
+            </div>
             <div className="flex-1 text-center md:text-left space-y-4">
               <div>
                 <h2 className="text-4xl font-black tracking-tight leading-none mb-3">{child.name}</h2>
@@ -121,7 +122,7 @@ export default function ChildDashboardPage() {
           COMENZAR MODO NIÑO
         </AppButton>
 
-        {/* Progress Grid */}
+        {/* Rest of the Dashboard remains the same */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <AppCard className="p-8 bg-white space-y-6 hover:translate-y-[-4px] transition-all cursor-pointer" onClick={() => router.push(`/child/${childId}/reports`)}>
             <div className="flex items-center justify-between">
@@ -148,7 +149,6 @@ export default function ChildDashboardPage() {
           </AppCard>
         </div>
 
-        {/* Menu Options */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button 
             className="flex items-center justify-between p-6 bg-white rounded-[2rem] hover:bg-accent/5 hover:scale-[1.02] transition-all text-left shadow-lg shadow-black/5" 
