@@ -229,15 +229,19 @@ export default function GamePlayPage() {
     audio.onerror = () => {
       setIsPlayingAudio(false);
       audioRef.current = null;
-      console.error("Audio local no encontrado o bloqueado:", src);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("Audio local no encontrado o bloqueado:", src);
+      }
       toast({ 
         variant: "destructive", 
         title: "Audio no disponible", 
-        description: "No se pudo cargar el archivo de sonido local." 
+        description: "El sonido todavía no está disponible." 
       });
     };
     audio.play().catch(err => {
-      console.warn("Reproducción bloqueada por el navegador:", err);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("Reproducción bloqueada por el navegador:", err);
+      }
       setIsPlayingAudio(false);
     });
   }, [stopAudio]);
