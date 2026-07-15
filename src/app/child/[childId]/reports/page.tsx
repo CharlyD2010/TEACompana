@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { AppHeader, AppCard, ProgressBar, LoadingState, EmptyState, AppButton } from '@/components/app-components';
 import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { doc, collection, query, orderBy, limit } from 'firebase/firestore';
-import { TrendingUp, Star, Clock, Target, LayoutDashboard, Users, Sparkles, AlertCircle, Calendar } from 'lucide-react';
+import { TrendingUp, Star, Clock, Target, LayoutDashboard, Users, Sparkles, AlertCircle, Calendar, BookOpen, Lightbulb } from 'lucide-react';
 
 export default function ReportsPage() {
   const { childId } = useParams();
@@ -43,9 +43,15 @@ export default function ReportsPage() {
     return { totalPoints, avgAccuracy, totalStars, favoriteGame };
   }, [sessions]);
 
-  // Recomendaciones Pedagógicas Basadas en Datos
+  // Recomendaciones Pedagógicas Basadas en Datos (Resiliente a falta de datos)
   const recommendations = useMemo(() => {
-    if (!sessions?.length) return ["Inicia algunas actividades para recibir recomendaciones personalizadas."];
+    if (!sessions?.length) {
+      return [
+        "Inicia con el juego de 'Emociones' para evaluar el reconocimiento visual.",
+        "Te recomendamos realizar la Evaluación Inicial para un plan más preciso.",
+        "Establece una rutina de juego de 15 minutos diarios."
+      ];
+    }
     
     const recs = [];
     const lowAccuracySessions = sessions.filter((s: any) => s.accuracy < 60);
@@ -102,10 +108,41 @@ export default function ReportsPage() {
           </AppCard>
         </div>
 
-        {/* Recomendaciones Pedagógicas */}
+        {/* Modo sin datos / Recomendaciones Iniciales */}
+        {!sessions?.length && (
+          <AppCard className="p-8 bg-white border-2 border-dashed border-primary/20 space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-primary uppercase">¡Bienvenido al Reporte!</h3>
+                <p className="text-sm text-muted-foreground font-medium">Aquí verás el progreso de {child?.name} conforme juegue.</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4 pt-4">
+              <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                <Lightbulb className="w-3 h-3" /> Pasos sugeridos para hoy
+              </h4>
+              <div className="grid gap-3">
+                <div className="p-4 bg-muted/30 rounded-2xl flex items-center justify-between group hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/child/${childId}/activities`)}>
+                  <span className="text-sm font-bold text-foreground">1. Completar un juego de Emociones</span>
+                  <AppButton size="sm" variant="ghost" className="h-8 text-[9px]">IR</AppButton>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-2xl flex items-center justify-between group hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/child/${childId}/assessment`)}>
+                  <span className="text-sm font-bold text-foreground">2. Realizar Evaluación Inicial</span>
+                  <AppButton size="sm" variant="ghost" className="h-8 text-[9px]">IR</AppButton>
+                </div>
+              </div>
+            </div>
+          </AppCard>
+        )}
+
+        {/* Recomendaciones Pedagógicas (Visibles siempre para guiar) */}
         <section className="space-y-4">
           <h3 className="px-2 text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-accent fill-accent" /> Recomendaciones del Sistema
+            <Sparkles className="w-4 h-4 text-accent fill-accent" /> Sugerencias del Sistema
           </h3>
           <AppCard className="p-6 bg-white border-l-8 border-l-primary space-y-4">
             {recommendations.map((rec, i) => (
@@ -120,17 +157,11 @@ export default function ReportsPage() {
         </section>
 
         {/* Historial Detallado */}
-        <section className="space-y-4">
-          <h3 className="px-2 text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
-            <Calendar className="w-4 h-4" /> Historial de Sesiones
-          </h3>
-          
-          {!sessions || sessions.length === 0 ? (
-            <EmptyState 
-              title="Sin actividad" 
-              description="Aún no hay registros de juego. El progreso se mostrará aquí conforme se completen actividades." 
-            />
-          ) : (
+        {sessions && sessions.length > 0 && (
+          <section className="space-y-4">
+            <h3 className="px-2 text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
+              <Calendar className="w-4 h-4" /> Historial de Sesiones
+            </h3>
             <div className="grid gap-3">
               {sessions.map((s: any) => (
                 <AppCard key={s.id} className="p-4 md:p-6 bg-white flex items-center justify-between group hover:border-primary/20 border-2 border-transparent transition-all shadow-sm">
@@ -157,8 +188,8 @@ export default function ReportsPage() {
                 </AppCard>
               ))}
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
         <div className="pt-10 flex flex-col md:flex-row gap-4 justify-center">
           <AppButton className="h-16 md:w-64" onClick={() => router.push(`/child/${childId}/dashboard`)}>
