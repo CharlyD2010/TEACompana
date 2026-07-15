@@ -2,24 +2,30 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AppCard, AppButton, AppHeader, LoadingState, ProgressBar } from '@/components/app-components';
-import { Smile, Shapes, Hash, Book, LayoutDashboard, Users, Clock, Star, MessageSquare, Volume2, Search, Brain, HandMetal, ShieldAlert, Lock, ChevronRight } from 'lucide-react';
+import { AppCard, AppButton, AppHeader, LoadingState } from '@/components/app-components';
+import { Smile, Shapes, Hash, Book, Clock, Star, Volume2, Search, Brain, ShieldAlert, Lock, ChevronRight, Type, Puzzle } from 'lucide-react';
 import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 
 const CATEGORIES = [
   { id: 'all', name: 'Todos', color: 'bg-muted', icon: Book },
   { id: 'emociones', name: 'Emociones', color: 'bg-primary', icon: Smile },
-  { id: 'colores', name: 'Colores y Formas', color: 'bg-secondary', icon: Shapes },
+  { id: 'letras', name: 'Letras', color: 'bg-secondary', icon: Type },
+  { id: 'numeros', name: 'Números', color: 'bg-accent', icon: Hash },
+  { id: 'formas', name: 'Formas', color: 'bg-secondary', icon: Shapes },
   { id: 'sonidos', name: 'Sonidos', color: 'bg-accent', icon: Volume2 },
-  { id: 'rutinas', name: 'Rutinas', color: 'bg-secondary', icon: Clock },
+  { id: 'rutinas', name: 'Rutinas', color: 'bg-primary', icon: Clock },
 ];
 
 const GAMES = [
   { id: 'g1', name: 'Emociones', cat: 'emociones', desc: 'Identifica cómo se siente el personaje.', emoji: '😊' },
-  { id: 'g2', name: 'Colores', cat: 'colores', desc: 'Une los objetos con su color.', emoji: '🎨' },
-  { id: 'g6', name: '¿Qué suena?', cat: 'sonidos', desc: 'Identifica sonidos de animales y casa.', emoji: '🔊' },
-  { id: 'g4', name: 'Mis Rutinas', cat: 'rutinas', desc: 'Ordena y completa tus acciones diarias.', emoji: '☀️' },
+  { id: 'g3', name: 'Las Letras', cat: 'letras', desc: 'Aprende las vocales y palabras.', emoji: 'ABC' },
+  { id: 'g2', name: 'Los Colores', cat: 'formas', desc: 'Busca objetos por su color.', emoji: '🎨' },
+  { id: 'g7', name: 'Las Formas', cat: 'formas', desc: 'Reconoce círculos y cuadrados.', emoji: '📐' },
+  { id: 'g8', name: 'Contemos', cat: 'numeros', desc: 'Aprende a contar objetos reales.', emoji: '🔢' },
+  { id: 'g6', name: '¿Qué suena?', cat: 'sonidos', desc: 'Identifica sonidos de animales.', emoji: '🔊' },
+  { id: 'g4', name: 'Mis Rutinas', cat: 'rutinas', desc: 'Ordena tus acciones diarias.', emoji: '☀️' },
+  { id: 'g5', name: 'Palabras', cat: 'letras', desc: 'Une palabras con sus dibujos.', emoji: '🖼️' },
 ];
 
 export default function ActivitiesPage() {
@@ -58,19 +64,19 @@ export default function ActivitiesPage() {
         showBackToChildren={true}
         childId={childId as string}
       >
-        <div className="flex items-center gap-2 bg-accent/20 px-4 py-1.5 rounded-full border-2 border-accent">
+        <div className="flex items-center gap-2 bg-accent/20 px-4 py-1.5 rounded-full border-2 border-accent shadow-sm">
           <Star className="w-4 h-4 fill-accent text-accent" />
           <span className="font-black text-xs md:text-sm text-accent-foreground">{child?.points || 0}</span>
         </div>
       </AppHeader>
 
       <div className="p-4 md:p-8 space-y-10">
-        {/* Categorías */}
+        {/* Categorías Visuales */}
         <div className="space-y-4">
           <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] px-2 flex items-center gap-2">
-            <Search className="w-3.5 h-3.5" /> Categorías de Aprendizaje
+            <Search className="w-3.5 h-3.5" /> Áreas de Aprendizaje
           </h3>
-          <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 px-1">
+          <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 px-1">
             {CATEGORIES.map(cat => (
               <button
                 key={cat.id}
@@ -88,15 +94,15 @@ export default function ActivitiesPage() {
           </div>
         </div>
 
-        {/* Rejilla de Juegos con Niveles */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+        {/* Rejilla de Actividades Progresivas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {filteredGames.map((game) => {
             const catColor = CATEGORIES.find(c => c.id === game.cat)?.color || 'bg-muted';
             
             return (
-              <AppCard key={game.id} className="p-0 border-none shadow-2xl shadow-primary/5">
+              <AppCard key={game.id} className="p-0 border-none shadow-2xl shadow-primary/5 hover:translate-y-[-4px] transition-all">
                 <div className={`h-32 ${catColor} flex items-center justify-center relative overflow-hidden`}>
-                  <span className="text-7xl z-10">{game.emoji}</span>
+                  <span className="text-7xl z-10 drop-shadow-xl">{game.emoji}</span>
                   <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-md px-4 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest">
                     {CATEGORIES.find(c => c.id === game.cat)?.name}
                   </div>
@@ -108,19 +114,20 @@ export default function ActivitiesPage() {
                     <p className="text-xs text-muted-foreground font-medium mt-1">{game.desc}</p>
                   </div>
 
-                  {/* Niveles por Juego */}
+                  {/* Selector de Niveles 1-3 */}
                   <div className="space-y-3">
                     {[1, 2, 3].map(lvl => {
                       const levelProgress = progress?.find((p: any) => p.gameId === game.id && p.levelId === lvl);
-                      const isUnlocked = lvl === 1 || progress?.some((p: any) => p.gameId === game.id && p.levelId === lvl - 1 && p.stars >= 2) || progress?.find((p: any) => p.gameId === game.id && p.levelId === lvl)?.unlocked;
-                      const isCompleted = (levelProgress?.stars || 0) > 0;
+                      const prevLevelProgress = progress?.find((p: any) => p.gameId === game.id && p.levelId === lvl - 1);
+                      
+                      const isUnlocked = lvl === 1 || (prevLevelProgress && prevLevelProgress.stars >= 2) || levelProgress?.unlocked;
 
                       return (
                         <button
                           key={lvl}
                           disabled={!isUnlocked}
                           onClick={() => router.push(`/child/${childId}/game/${game.id}?lvl=${lvl}`)}
-                          className={`w-full p-4 rounded-2xl flex items-center justify-between border-2 transition-all active:scale-95 ${isUnlocked ? 'bg-white border-muted hover:border-primary/30 cursor-pointer' : 'bg-muted/50 border-transparent opacity-60 cursor-not-allowed'}`}
+                          className={`w-full p-4 rounded-2xl flex items-center justify-between border-2 transition-all active:scale-95 ${isUnlocked ? 'bg-white border-muted hover:border-primary/30 cursor-pointer shadow-sm' : 'bg-muted/30 border-transparent opacity-60 cursor-not-allowed'}`}
                         >
                           <div className="flex items-center gap-4">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${isUnlocked ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
@@ -128,11 +135,11 @@ export default function ActivitiesPage() {
                             </div>
                             <div className="text-left">
                               <span className={`block font-black text-[11px] uppercase tracking-wider ${isUnlocked ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                {lvl === 1 ? 'Básico' : lvl === 2 ? 'Intermedio' : 'Avanzado'}
+                                {lvl === 1 ? 'Exploración' : lvl === 2 ? 'Intermedio' : 'Maestría'}
                               </span>
                               <div className="flex gap-1 mt-1">
                                 {[1, 2, 3].map(i => (
-                                  <Star key={i} className={`w-3 h-3 ${i <= (levelProgress?.stars || 0) ? 'fill-accent text-accent' : 'text-muted-foreground/20 fill-muted-foreground/10'}`} />
+                                  <Star key={i} className={`w-3.5 h-3.5 ${i <= (levelProgress?.stars || 0) ? 'fill-accent text-accent' : 'text-muted/20 fill-muted/10'}`} />
                                 ))}
                               </div>
                             </div>
@@ -152,15 +159,13 @@ export default function ActivitiesPage() {
           })}
         </div>
 
-        {/* Footer */}
-        <div className="pt-10 flex flex-col md:flex-row gap-4 justify-center">
-          <AppButton variant="outline" className="h-16 md:w-64 gap-2" onClick={() => router.push(`/child/${childId}/dashboard`)}>
-            <LayoutDashboard className="w-5 h-5" /> Volver al Dashboard
-          </AppButton>
-          <AppButton variant="ghost" className="h-16 text-muted-foreground gap-2" onClick={() => router.push('/children')}>
-            <Users className="w-5 h-5" /> Ver otros niños
-          </AppButton>
-        </div>
+        {filteredGames.length === 0 && (
+          <div className="py-20 text-center space-y-4 bg-muted/20 rounded-[3rem] border-4 border-dashed">
+            <Brain className="w-16 h-16 text-muted-foreground mx-auto opacity-20" />
+            <p className="text-sm font-black text-muted-foreground uppercase tracking-widest">Aún no hay juegos en esta categoría</p>
+            <AppButton variant="outline" onClick={() => setSelectedCat('all')}>Ver todos los juegos</AppButton>
+          </div>
+        )}
       </div>
     </div>
   );
