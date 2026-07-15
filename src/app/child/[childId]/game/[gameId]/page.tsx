@@ -8,6 +8,7 @@ import { useFirestore, useUser, useDoc } from '@/firebase';
 import { doc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { rewardService } from '@/services/rewardService';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-// DATA ESTRUCTURADA POR NIVELES
+// DATA ESTRUCTURADA POR NIVELES MEJORADA (FASE 3)
 const GAME_LEVELS: Record<string, Record<number, any>> = {
   g1: { // Emociones
     1: { name: 'Nivel 1: Básicas', questions: [
@@ -45,23 +46,22 @@ const GAME_LEVELS: Record<string, Record<number, any>> = {
       { id: 1, text: 'Selecciona el color NARANJA', options: ['🟠', '🟣', '🟤', '⚫'], correct: 0 },
       { id: 2, text: 'Selecciona el color MORADO', options: ['🟠', '🟣', '🟤', '⚫'], correct: 1 },
     ]},
-    3: { name: 'Nivel 3: Objetos', questions: [
+    3: { name: 'Nivel 3: Clasificación', questions: [
       { id: 1, text: '¿De qué color es el SOL?', options: ['🟡', '🔵', '🔴', '🟢'], correct: 0 },
       { id: 2, text: '¿De qué color es una MANZANA?', options: ['🔵', '🔴', '🟣', '⚫'], correct: 1 },
     ]}
   },
   g6: { // Sonidos
-    1: { name: 'Nivel 1: Animales Granja', type: 'sound', questions: [
+    1: { name: 'Nivel 1: Animales', type: 'sound', questions: [
       { id: 1, text: '¿Qué animal suena así?', audio: '/audio/dog.mp3', options: ['🐶', '🐱'], correct: 0 },
       { id: 2, text: '¿Qué animal suena así?', audio: '/audio/cow.mp3', options: ['🐷', '🐮'], correct: 1 },
     ]},
-    2: { name: 'Nivel 2: Animales Selva', type: 'sound', questions: [
-      { id: 1, text: '¿Quién ruge así?', audio: '/audio/lion.mp3', options: ['🦁', '🐵', '🐘', '🦒'], correct: 0 },
-      { id: 2, text: '¿Quién suena así?', audio: '/audio/monkey.mp3', options: ['🦁', '🐵', '🐘', '🦒'], correct: 1 },
+    2: { name: 'Nivel 2: Ciudad', type: 'sound', questions: [
+      { id: 1, text: '¿Qué suena así?', audio: '/audio/car.mp3', options: ['🚗', '🚲'], correct: 0 },
+      { id: 2, text: '¿Qué suena así?', audio: '/audio/bell.mp3', options: ['🔔', '🚪'], correct: 0 },
     ]},
-    3: { name: 'Nivel 3: Objetos Casa', type: 'sound', questions: [
+    3: { name: 'Nivel 3: Casa', type: 'sound', questions: [
       { id: 1, text: '¿Qué objeto suena así?', audio: '/audio/phone.mp3', options: ['☎️', '🚗', '🔔', '🚪'], correct: 0 },
-      { id: 2, text: '¿Qué objeto suena así?', audio: '/audio/car.mp3', options: ['☎️', '🚗', '🔔', '🚪'], correct: 1 },
     ]}
   },
   g4: { // Rutinas
@@ -69,12 +69,12 @@ const GAME_LEVELS: Record<string, Record<number, any>> = {
       { id: 1, text: '¿Qué usamos para LAVAR las manos?', options: ['🧼', '👟', '📱', '🍎'], correct: 0 },
       { id: 2, text: '¿Qué usamos para CEPILLAR los dientes?', options: ['🦷', '🥪', '🧸', '🚿'], correct: 0 },
     ]},
-    2: { name: 'Nivel 2: Ordenar', questions: [
+    2: { name: 'Nivel 2: Secuencias', questions: [
       { id: 1, text: '¿Qué hacemos PRIMERO?', options: ['🛌 Despertar', '🦷 Lavar dientes'], correct: 0 },
       { id: 2, text: '¿Qué hacemos ANTES de dormir?', options: ['👟 Jugar', '🛌 Acostarse'], correct: 1 },
     ]},
-    3: { name: 'Nivel 3: Completar', questions: [
-      { id: 1, text: 'FALTA UN PASO: Mojar manos -> [?] -> Frotar', options: ['🧼 Jabón', '🛌 Dormir', '👟 Zapatos', '🥪 Comer'], correct: 0 },
+    3: { name: 'Nivel 3: Compleción', questions: [
+      { id: 1, text: 'MOJAR MANOS -> [?] -> FROTAR', options: ['🧼 Jabón', '🛌 Dormir', '👟 Zapatos'], correct: 0 },
     ]}
   }
 };
@@ -94,28 +94,23 @@ export default function GamePlayPage() {
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Obtener datos del juego y nivel
   const gameData = useMemo(() => GAME_LEVELS[gameId as string] || GAME_LEVELS.g1, [gameId]);
   const levelData = useMemo(() => gameData[currentLevel] || gameData[1], [gameData, currentLevel]);
   const currentQ = useMemo(() => levelData.questions[currentIdx], [levelData, currentIdx]);
 
   const playQuestionAudio = useCallback(() => {
     if (currentQ?.audio) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      if (audioRef.current) audioRef.current.pause();
       setIsPlayingAudio(true);
       const audio = new Audio(currentQ.audio);
       audioRef.current = audio;
-      audio.play().catch(e => console.warn("Audio no encontrado, usando fallback visual", e));
+      audio.play().catch(e => console.warn("Audio no disponible", e));
       audio.onended = () => setIsPlayingAudio(false);
     }
   }, [currentQ]);
 
   useEffect(() => {
-    if (levelData.type === 'sound') {
-      playQuestionAudio();
-    }
+    if (levelData.type === 'sound') playQuestionAudio();
   }, [currentIdx, currentLevel, levelData.type, playQuestionAudio]);
 
   const finishGame = useCallback(async (finalCorrect: number) => {
@@ -134,8 +129,8 @@ export default function GamePlayPage() {
       gameId: gameId as string,
       levelId: currentLevel,
       userId: user.uid,
-      gameName: `${GAME_LEVELS[gameId as string]?.name || 'Juego'} - ${levelData.name}`,
-      score: finalCorrect * 10,
+      gameName: `${GAME_LEVELS[gameId as string]?.name || 'Juego'}`,
+      score: finalCorrect * 15,
       stars,
       correctAnswers: finalCorrect,
       incorrectAnswers: totalQuestions - finalCorrect,
@@ -149,7 +144,7 @@ export default function GamePlayPage() {
       // Guardar sesión
       await setDoc(doc(db, 'children', childId as string, 'game_sessions', sessionId), sessionData);
 
-      // Actualizar progreso por nivel
+      // Actualizar progreso
       const progressId = `${childId}_${gameId}_lvl${currentLevel}`;
       const progressRef = doc(db, 'children', childId as string, 'game_progress', progressId);
       
@@ -158,13 +153,13 @@ export default function GamePlayPage() {
         childId,
         gameId,
         levelId: currentLevel,
-        stars: stars,
-        points: increment(finalCorrect * 10),
+        stars,
+        points: increment(finalCorrect * 15),
         completed: stars > 0,
         updatedAt: serverTimestamp(),
       }, { merge: true });
 
-      // Desbloquear siguiente nivel si aplica (2 o más estrellas)
+      // Desbloqueo de nivel superior
       if (stars >= 2 && currentLevel < 3) {
         const nextLevelId = `${childId}_${gameId}_lvl${currentLevel + 1}`;
         await setDoc(doc(db, 'children', childId as string, 'game_progress', nextLevelId), {
@@ -173,11 +168,14 @@ export default function GamePlayPage() {
         }, { merge: true });
       }
 
-      // Totales globales del niño
+      // Totales globales
       await updateDoc(doc(db, 'children', childId as string), {
-        points: increment(finalCorrect * 10),
+        points: increment(finalCorrect * 15),
         stars: increment(stars)
       });
+
+      // Verificar y otorgar insignias pedagógicas (Fase 3)
+      await rewardService.checkAndAwardBadges(db, childId as string, sessionData);
 
       router.push(`/child/${childId}/results/${sessionId}`);
     } catch (e: any) {
@@ -192,10 +190,8 @@ export default function GamePlayPage() {
 
   const handleOption = (idx: number) => {
     if (feedback || isFinishing) return;
-    
     const isCorrect = idx === currentQ.correct;
     setFeedback(isCorrect ? 'correct' : 'wrong');
-    
     const newCorrectCount = isCorrect ? results.correct + 1 : results.correct;
     
     setTimeout(() => {
@@ -206,81 +202,69 @@ export default function GamePlayPage() {
       } else {
         finishGame(newCorrectCount);
       }
-    }, 1200);
+    }, 1000);
   };
 
-  if (isFinishing) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background space-y-8 p-10">
-        <Trophy className="w-24 h-24 text-accent animate-bounce" />
-        <h2 className="text-4xl font-black text-primary uppercase text-center">¡Buen Trabajo!</h2>
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-      </div>
-    );
-  }
+  if (isFinishing) return <div className="min-h-screen flex flex-col items-center justify-center bg-background"><Trophy className="w-24 h-24 text-accent animate-bounce" /><h2 className="text-2xl font-black mt-4 uppercase">¡Analizando progreso!</h2></div>;
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-hidden">
-      {/* Header Juego */}
-      <div className="p-4 md:p-8 flex items-center justify-between bg-white/50 backdrop-blur-md border-b-4 border-muted/30">
+      {/* Cabecera del Juego */}
+      <div className="p-4 md:p-6 flex items-center justify-between bg-white border-b-2">
         <div className="flex items-center gap-4">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <button className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-muted-foreground shadow-md border-2 border-muted/50">
-                <X className="w-7 h-7" />
-              </button>
+              <button className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground"><X className="w-6 h-6" /></button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="rounded-[3rem]">
+            <AlertDialogContent className="rounded-[2.5rem]">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-2xl font-black text-primary uppercase text-center">¿Quieres salir?</AlertDialogTitle>
-                <AlertDialogDescription className="text-center font-bold">Si sales ahora no guardaremos tus estrellas.</AlertDialogDescription>
+                <AlertDialogTitle className="font-black uppercase">¿Quieres salir?</AlertDialogTitle>
+                <AlertDialogDescription className="font-bold">No se guardará el progreso de este nivel.</AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter className="flex flex-col gap-3">
+              <AlertDialogFooter>
                 <AppButton className="w-full" onClick={() => router.push(`/child/${childId}/activities`)}>Sí, salir</AppButton>
                 <AlertDialogCancel className="w-full rounded-2xl">Seguir jugando</AlertDialogCancel>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
           <div className="min-w-0">
-            <h2 className="font-black text-primary uppercase text-lg leading-tight truncate">{levelData.name}</h2>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Nivel {currentLevel}</p>
+            <h2 className="font-black text-primary uppercase text-sm truncate">{levelData.name}</h2>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Pregunta {currentIdx + 1}</p>
           </div>
         </div>
-        <div className="font-black bg-primary/10 text-primary px-5 py-2 rounded-2xl">
+        <div className="font-black text-primary bg-primary/10 px-4 py-1.5 rounded-full text-xs">
           {currentIdx + 1} / {levelData.questions.length}
         </div>
       </div>
 
-      {/* Area Central */}
-      <div className="flex-1 p-6 flex flex-col items-center justify-center space-y-12 overflow-y-auto">
-        <div className="text-center space-y-8 max-w-2xl w-full">
+      {/* Área de Juego */}
+      <div className="flex-1 p-6 flex flex-col items-center justify-center space-y-10">
+        <div className="text-center space-y-6 max-w-xl w-full">
           {levelData.type === 'sound' ? (
             <button 
               onClick={playQuestionAudio}
-              className={`w-32 h-32 md:w-48 md:h-48 rounded-[3rem] bg-white shadow-2xl flex flex-col items-center justify-center border-8 border-primary/20 transition-all ${isPlayingAudio ? 'scale-110 border-primary' : 'hover:scale-105'}`}
+              className={`w-40 h-40 rounded-[2.5rem] bg-white shadow-xl flex flex-col items-center justify-center border-4 border-primary/20 transition-all ${isPlayingAudio ? 'scale-110 border-primary animate-pulse' : ''}`}
             >
-              <Volume2 className={`w-16 h-16 md:w-24 md:h-24 ${isPlayingAudio ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
-              <span className="text-[10px] font-black text-primary uppercase mt-2">{isPlayingAudio ? 'Escuchando...' : 'Toca para oír'}</span>
+              <Volume2 className={`w-16 h-16 ${isPlayingAudio ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className="text-[10px] font-black text-primary uppercase mt-2">{isPlayingAudio ? 'Escuchando...' : 'Tocar para oír'}</span>
             </button>
           ) : (
-            <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-[2.5rem] shadow-2xl flex items-center justify-center mx-auto border-4 border-primary/20 animate-in zoom-in duration-500">
-               <span className="text-5xl md:text-7xl">{currentQ.options[currentQ.correct]}</span>
+            <div className="w-24 h-24 bg-white rounded-[2rem] shadow-lg flex items-center justify-center mx-auto border-2 border-primary/10">
+               <span className="text-5xl">{currentQ.options[currentQ.correct]}</span>
             </div>
           )}
-          <h1 className="text-4xl md:text-6xl font-black leading-tight text-primary px-4">
-            {currentQ.text}
-          </h1>
+          <h1 className="text-3xl md:text-5xl font-black leading-tight text-foreground">{currentQ.text}</h1>
         </div>
 
-        {/* Opciones */}
-        <div className={`grid gap-6 w-full max-w-3xl px-4 ${currentQ.options.length > 2 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
+        {/* Opciones con Feedback Pedagógico */}
+        <div className={`grid gap-4 w-full max-w-2xl ${currentQ.options.length > 2 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
           {currentQ.options.map((opt: string, i: number) => (
             <button 
               key={i} 
               onClick={() => handleOption(i)} 
-              className={`min-h-[160px] md:min-h-[200px] text-6xl md:text-8xl bg-white rounded-[3rem] shadow-xl border-8 border-transparent transition-all hover:bg-muted/10 flex items-center justify-center relative overflow-hidden group
-                ${feedback === 'correct' && i === currentQ.correct ? 'border-secondary bg-secondary/10 scale-105 z-10' : ''}
-                ${feedback === 'wrong' && i !== currentQ.correct ? 'opacity-30 grayscale blur-[1px]' : ''}
+              className={`min-h-[140px] text-5xl md:text-7xl bg-white rounded-[2.5rem] shadow-md border-4 border-transparent transition-all active:scale-95 flex items-center justify-center
+                ${feedback === 'correct' && i === currentQ.correct ? 'border-secondary bg-secondary/10' : ''}
+                ${feedback === 'wrong' && i !== currentQ.correct ? 'opacity-40 grayscale blur-[1px]' : ''}
                 ${feedback === 'wrong' && i === idx ? 'border-destructive' : ''}
               `}
               disabled={!!feedback}
@@ -293,16 +277,12 @@ export default function GamePlayPage() {
 
       {/* Feedback Overlay */}
       {feedback && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md z-[100] animate-in fade-in duration-300">
-          <div className="bg-white/95 p-12 md:p-20 rounded-[4rem] shadow-2xl border-8 border-white text-center flex flex-col items-center gap-6">
-            <div className={`p-8 rounded-full ${feedback === 'correct' ? 'bg-secondary' : 'bg-destructive'} border-8 border-white/20 shadow-xl`}>
-              {feedback === 'correct' ? (
-                <CheckCircle2 className="w-20 h-20 md:w-32 md:h-32 text-white animate-bounce" />
-              ) : (
-                <XCircle className="w-20 h-20 md:w-32 md:h-32 text-white animate-pulse" />
-              )}
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50">
+          <div className="bg-white/95 p-10 rounded-[3rem] shadow-2xl border-4 border-white text-center animate-in zoom-in-50 duration-300">
+            <div className={`p-6 rounded-full mb-4 ${feedback === 'correct' ? 'bg-secondary' : 'bg-destructive'}`}>
+              {feedback === 'correct' ? <CheckCircle2 className="w-16 h-16 text-white" /> : <XCircle className="w-16 h-16 text-white" />}
             </div>
-            <h3 className={`text-4xl md:text-7xl font-black uppercase tracking-widest ${feedback === 'correct' ? 'text-secondary' : 'text-destructive'}`}>
+            <h3 className={`text-4xl font-black uppercase ${feedback === 'correct' ? 'text-secondary' : 'text-destructive'}`}>
               {feedback === 'correct' ? '¡GENIAL!' : '¡CASI!'}
             </h3>
           </div>
