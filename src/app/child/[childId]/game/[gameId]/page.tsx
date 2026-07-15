@@ -1,10 +1,9 @@
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppButton, LoadingState } from '@/components/app-components';
-import { CheckCircle2, XCircle, Loader2, X, LayoutDashboard, Users, BookOpen, Star, Trophy } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, X, Star, Trophy, RefreshCcw } from 'lucide-react';
 import { useFirestore, useUser, useDoc } from '@/firebase';
 import { doc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -117,29 +116,10 @@ export default function GamePlayPage() {
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
 
-  const game = GAME_DATA[gameId as string] || GAME_DATA.g1;
+  const game = useMemo(() => GAME_DATA[gameId as string] || GAME_DATA.g1, [gameId]);
   const currentQ = game.questions[currentIdx];
 
-  const handleOption = (idx: number) => {
-    if (feedback || isFinishing) return;
-    
-    const isCorrect = idx === currentQ.correct;
-    setFeedback(isCorrect ? 'correct' : 'wrong');
-    
-    const newCorrectCount = isCorrect ? results.correct + 1 : results.correct;
-    
-    setTimeout(() => {
-      setFeedback(null);
-      if (currentIdx < game.questions.length - 1) {
-        setResults(prev => ({ ...prev, correct: newCorrectCount }));
-        setCurrentIdx(prev => prev + 1);
-      } else {
-        finishGame(newCorrectCount);
-      }
-    }, 1200);
-  };
-
-  const finishGame = async (finalCorrect: number) => {
+  const finishGame = useCallback(async (finalCorrect: number) => {
     if (!db || !user || !childId) return;
     setIsFinishing(true);
     
@@ -198,15 +178,34 @@ export default function GamePlayPage() {
         requestResourceData: sessionData
       }));
     }
+  }, [db, user, childId, game, results.startTime, gameId, router]);
+
+  const handleOption = (idx: number) => {
+    if (feedback || isFinishing) return;
+    
+    const isCorrect = idx === currentQ.correct;
+    setFeedback(isCorrect ? 'correct' : 'wrong');
+    
+    const newCorrectCount = isCorrect ? results.correct + 1 : results.correct;
+    
+    setTimeout(() => {
+      setFeedback(null);
+      if (currentIdx < game.questions.length - 1) {
+        setResults(prev => ({ ...prev, correct: newCorrectCount }));
+        setCurrentIdx(prev => prev + 1);
+      } else {
+        finishGame(newCorrectCount);
+      }
+    }, 1200);
   };
 
   if (isFinishing) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background space-y-6">
-        <Trophy className="w-20 h-20 text-accent animate-bounce" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background space-y-6 p-6">
+        <Trophy className="w-16 h-16 md:w-20 md:h-20 text-accent animate-bounce" />
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-black text-primary uppercase tracking-tighter">¡Lo lograste!</h2>
-          <p className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Guardando tus resultados...</p>
+          <h2 className="text-2xl md:text-3xl font-black text-primary uppercase tracking-tighter">¡Lo lograste!</h2>
+          <p className="font-bold text-muted-foreground uppercase text-[10px] md:text-xs tracking-widest">Guardando tus resultados...</p>
         </div>
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
       </div>
@@ -214,20 +213,20 @@ export default function GamePlayPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col overflow-hidden">
       {/* Game Header */}
-      <div className="p-6 flex items-center justify-between bg-white border-b-2 border-muted/50">
-        <div className="flex items-center gap-4">
+      <div className="p-4 md:p-6 flex items-center justify-between bg-white border-b-2 border-muted/50 safe-area-top">
+        <div className="flex items-center gap-3 md:gap-4 max-w-[70%]">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <button className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
-                <X className="w-6 h-6" />
+              <button className="w-10 h-10 md:w-12 md:h-12 bg-muted rounded-xl md:rounded-2xl flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0">
+                <X className="w-5 h-5 md:w-6 md:h-6" />
               </button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="rounded-[2.5rem] border-none">
+            <AlertDialogContent className="rounded-[2.5rem] border-none max-w-[90vw] md:max-w-md">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-2xl font-black text-primary uppercase tracking-tighter">¿Seguro que deseas salir?</AlertDialogTitle>
-                <AlertDialogDescription className="text-muted-foreground font-medium">
+                <AlertDialogTitle className="text-xl md:text-2xl font-black text-primary uppercase tracking-tighter">¿Seguro que deseas salir?</AlertDialogTitle>
+                <AlertDialogDescription className="text-muted-foreground font-medium text-sm">
                   Si sales ahora no se guardarán tus puntos de esta partida.
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -241,42 +240,42 @@ export default function GamePlayPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <div className="space-y-1">
-            <h2 className="font-black text-primary uppercase tracking-tight leading-none text-lg">{game.name}</h2>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{game.area}</p>
+          <div className="space-y-0.5 min-w-0">
+            <h2 className="font-black text-primary uppercase tracking-tight leading-none text-base md:text-lg truncate">{game.name}</h2>
+            <p className="text-[8px] md:text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] truncate">{game.area}</p>
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="text-xs font-black bg-primary/10 text-primary px-4 py-2 rounded-full border-2 border-primary/10">
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="text-[10px] md:text-xs font-black bg-primary/10 text-primary px-3 md:px-4 py-1.5 md:py-2 rounded-full border-2 border-primary/10 whitespace-nowrap">
             {currentIdx + 1} / {game.questions.length}
           </div>
         </div>
       </div>
 
       {/* Main Game Area */}
-      <div className="flex-1 p-6 flex flex-col items-center justify-center space-y-12">
-        <div className="text-center space-y-6 max-w-xl">
-          <div className="w-24 h-24 bg-white rounded-[2rem] shadow-2xl flex items-center justify-center mx-auto border-4 border-primary/20">
-            <span className="text-5xl">{currentQ.options[currentQ.correct]}</span>
+      <div className="flex-1 p-4 md:p-6 flex flex-col items-center justify-center space-y-8 md:space-y-12 overflow-y-auto">
+        <div className="text-center space-y-4 md:space-y-6 max-w-xl w-full">
+          <div className="w-20 h-20 md:w-24 md:h-24 bg-white rounded-[1.8rem] md:rounded-[2rem] shadow-xl flex items-center justify-center mx-auto border-4 border-primary/20">
+            <span className="text-4xl md:text-5xl">{currentQ.options[currentQ.correct]}</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black leading-tight text-primary tracking-tight">
+          <h1 className="text-3xl md:text-5xl font-black leading-tight text-primary tracking-tight px-2">
             {currentQ.text}
           </h1>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 w-full max-w-2xl">
+        <div className="grid grid-cols-2 gap-4 md:gap-6 w-full max-w-2xl px-2">
           {currentQ.options.map((opt: string, i: number) => (
             <button 
               key={i} 
               onClick={() => handleOption(i)} 
-              className={`h-48 md:h-60 text-6xl md:text-8xl bg-white rounded-[3rem] shadow-xl border-8 border-transparent active:scale-95 transition-all hover:bg-muted/30 flex items-center justify-center
+              className={`min-h-[140px] md:h-60 text-5xl md:text-8xl bg-white rounded-[2rem] md:rounded-[3rem] shadow-xl border-8 border-transparent active:scale-95 transition-all hover:bg-muted/30 flex items-center justify-center
                 ${feedback === 'correct' && i === currentQ.correct ? 'border-secondary bg-secondary/10 scale-105' : ''}
                 ${feedback === 'wrong' && i !== currentQ.correct ? 'opacity-50 grayscale' : ''}
               `}
               disabled={!!feedback}
             >
-              {opt}
+              <span className="select-none">{opt}</span>
             </button>
           ))}
         </div>
@@ -284,16 +283,16 @@ export default function GamePlayPage() {
 
       {/* Visual Feedback Overlay */}
       {feedback && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md z-[100] animate-in fade-in duration-300">
-          <div className="flex flex-col items-center gap-8 bg-white/80 p-16 rounded-[4rem] shadow-2xl border-4 border-white">
-            <div className={`p-10 rounded-full shadow-2xl ${feedback === 'correct' ? 'bg-secondary' : 'bg-destructive'}`}>
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md z-[100] animate-in fade-in duration-300 p-6">
+          <div className="flex flex-col items-center gap-6 md:gap-8 bg-white/90 p-10 md:p-16 rounded-[3rem] md:rounded-[4rem] shadow-2xl border-4 border-white w-full max-w-sm md:max-w-md text-center">
+            <div className={`p-8 md:p-10 rounded-full shadow-2xl ${feedback === 'correct' ? 'bg-secondary' : 'bg-destructive'}`}>
               {feedback === 'correct' ? (
-                <CheckCircle2 className="w-24 h-24 text-white animate-bounce" />
+                <CheckCircle2 className="w-16 h-16 md:w-24 md:h-24 text-white animate-bounce" />
               ) : (
-                <XCircle className="w-24 h-24 text-white animate-pulse" />
+                <XCircle className="w-16 h-16 md:w-24 md:h-24 text-white animate-pulse" />
               )}
             </div>
-            <h3 className={`text-6xl font-black uppercase tracking-[0.2em] ${feedback === 'correct' ? 'text-secondary' : 'text-destructive'}`}>
+            <h3 className={`text-4xl md:text-6xl font-black uppercase tracking-[0.1em] md:tracking-[0.2em] ${feedback === 'correct' ? 'text-secondary' : 'text-destructive'}`}>
               {feedback === 'correct' ? '¡Muy Bien!' : '¡Casi!'}
             </h3>
           </div>

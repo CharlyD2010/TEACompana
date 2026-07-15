@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppHeader, AppCard, AppButton, LoadingState, EmptyState } from '@/components/app-components';
 import { generateLearningPlan, GenerateLearningPlanOutput } from '@/ai/flows/generate-personalized-learning-plan';
-import { Sparkles, CheckCircle2, Lightbulb, Users, GraduationCap, Target, LayoutDashboard, RotateCcw } from 'lucide-react';
+import { Sparkles, LayoutDashboard, RotateCcw, Target, BookOpen, Lightbulb, GraduationCap, Users } from 'lucide-react';
 import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
 import { doc, collection, query, orderBy, limit, setDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
@@ -37,14 +37,14 @@ export default function LearningPlanPage() {
   const [generating, setGenerating] = useState(false);
 
   // Fallback plan in case AI fails
-  const generateFallbackPlan = (childData: any, assessmentScores: any): GenerateLearningPlanOutput => {
+  const generateFallbackPlan = useCallback((childData: any, assessmentScores: any): GenerateLearningPlanOutput => {
     const areas = [
-      { id: 'emociones', label: 'Emociones', score: assessmentScores.emociones },
-      { id: 'comunicacion', label: 'Comunicación', score: assessmentScores.comunicacion },
-      { id: 'social', label: 'Social', score: assessmentScores.social },
-      { id: 'cognitivo', label: 'Cognitivo', score: assessmentScores.cognitivo },
-      { id: 'motricidad', label: 'Motricidad', score: assessmentScores.motricidad },
-      { id: 'rutinas', label: 'Rutinas', score: assessmentScores.rutinas },
+      { id: 'emociones', label: 'Emociones', score: assessmentScores.emociones || 3 },
+      { id: 'comunicacion', label: 'Comunicación', score: assessmentScores.comunicacion || 3 },
+      { id: 'social', label: 'Social', score: assessmentScores.social || 3 },
+      { id: 'cognitivo', label: 'Cognitivo', score: assessmentScores.cognitivo || 3 },
+      { id: 'motricidad', label: 'Motricidad', score: assessmentScores.motricidad || 3 },
+      { id: 'rutinas', label: 'Rutinas', score: assessmentScores.rutinas || 3 },
     ];
 
     const sortedAreas = [...areas].sort((a, b) => a.score - b.score);
@@ -73,9 +73,9 @@ export default function LearningPlanPage() {
         "Simplificar las instrucciones a pasos individuales."
       ]
     };
-  };
+  }, []);
 
-  async function handleGeneratePlan() {
+  const handleGeneratePlan = useCallback(async () => {
     if (!child || !assessments || assessments.length === 0 || !db || !user) return;
     
     setGenerating(true);
@@ -112,10 +112,10 @@ export default function LearningPlanPage() {
     } finally {
       setGenerating(false);
     }
-  }
+  }, [child, assessments, db, user, childId, generateFallbackPlan]);
 
   if (childLoading || assessmentLoading || planLoading || generating) {
-    return <div className="min-h-screen flex items-center justify-center"><LoadingState message={generating ? "Analizando evaluación..." : "Cargando plan..."} /></div>;
+    return <LoadingState message={generating ? "Analizando evaluación..." : "Cargando plan..."} onRetry={() => window.location.reload()} />;
   }
 
   if (!assessments || assessments.length === 0) {
@@ -144,82 +144,92 @@ export default function LearningPlanPage() {
         showBackToChildren={true}
         childId={childId as string}
       />
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6">
         {localPlan ? (
           <div className="space-y-6 animate-in fade-in duration-500">
-            <AppCard className="p-6 bg-primary text-white space-y-2 border-l-8 border-l-accent/50">
+            <AppCard className="p-6 bg-primary text-white space-y-2 border-l-8 border-l-accent/50 shadow-lg">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 fill-accent text-accent" />
-                <h3 className="text-lg font-black uppercase tracking-wider">Plan para {child?.name}</h3>
+                <h3 className="text-lg font-black uppercase tracking-wider truncate">Plan para {child?.name}</h3>
               </div>
-              <p className="text-sm opacity-90 font-medium italic">"Actualizado el {new Date(localPlan.createdAt).toLocaleDateString()}"</p>
+              <p className="text-xs md:text-sm opacity-90 font-medium italic">"Actualizado el {new Date(localPlan.createdAt).toLocaleDateString()}"</p>
             </AppCard>
 
             <section className="space-y-3">
-              <h4 className="flex items-center gap-2 font-black text-primary uppercase text-[10px] tracking-widest">Áreas Prioritarias</h4>
+              <h4 className="flex items-center gap-2 font-black text-primary uppercase text-[9px] md:text-[10px] tracking-widest">
+                <Target className="w-3 h-3" /> Áreas Prioritarias
+              </h4>
               <div className="flex flex-wrap gap-2">
                 {localPlan.priorityAreas.map((area: string, i: number) => (
-                  <span key={i} className="px-3 py-1 bg-white rounded-full text-[10px] font-black uppercase border-2 border-primary/20 text-primary">{area}</span>
+                  <span key={i} className="px-3 py-1 bg-white rounded-full text-[9px] md:text-[10px] font-black uppercase border-2 border-primary/20 text-primary whitespace-nowrap">{area}</span>
                 ))}
               </div>
             </section>
 
             <section className="space-y-4">
-              <h4 className="flex items-center gap-2 font-black text-secondary-foreground uppercase text-[10px] tracking-widest">Objetivos Semanales</h4>
+              <h4 className="flex items-center gap-2 font-black text-secondary-foreground uppercase text-[9px] md:text-[10px] tracking-widest">
+                <BookOpen className="w-3 h-3" /> Objetivos Semanales
+              </h4>
               <div className="grid gap-3">
                 {localPlan.weeklyGoals.map((goal: string, i: number) => (
                   <AppCard key={i} className="p-4 bg-white/60 border-l-8 border-l-secondary shadow-sm">
-                    <p className="text-sm font-bold text-secondary-foreground">{goal}</p>
+                    <p className="text-xs md:text-sm font-bold text-secondary-foreground leading-relaxed">{goal}</p>
                   </AppCard>
                 ))}
               </div>
             </section>
 
             <section className="space-y-4">
-              <h4 className="flex items-center gap-2 font-black text-accent-foreground uppercase text-[10px] tracking-widest">Actividades Sugeridas</h4>
+              <h4 className="flex items-center gap-2 font-black text-accent-foreground uppercase text-[9px] md:text-[10px] tracking-widest">
+                <Lightbulb className="w-3 h-3" /> Actividades Sugeridas
+              </h4>
               <div className="grid gap-3">
                 {localPlan.recommendedActivities.map((activity: string, i: number) => (
-                  <AppCard key={i} className="p-4 bg-accent/10 border-none flex items-center gap-3">
+                  <AppCard key={i} className="p-4 bg-accent/10 border-none flex items-center gap-3 shadow-sm">
                     <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0 text-accent-foreground font-black text-xs">{i+1}</div>
-                    <p className="text-sm font-bold">{activity}</p>
+                    <p className="text-xs md:text-sm font-bold leading-relaxed">{activity}</p>
                   </AppCard>
                 ))}
               </div>
             </section>
 
-            <AppCard className="p-6 bg-white space-y-8">
+            <AppCard className="p-6 bg-white space-y-8 shadow-md">
                <div className="space-y-4">
-                <h4 className="flex items-center gap-2 font-black text-primary uppercase text-[10px] tracking-widest">Para Padres</h4>
+                <h4 className="flex items-center gap-2 font-black text-primary uppercase text-[9px] md:text-[10px] tracking-widest">
+                  <Users className="w-3 h-3" /> Para Padres
+                </h4>
                 <ul className="space-y-3">
                   {localPlan.suggestionsForParents.map((s: string, i: number) => (
-                    <li key={i} className="text-sm text-muted-foreground flex gap-2">
-                      <span className="text-primary font-black">•</span> {s}
+                    <li key={i} className="text-xs md:text-sm text-muted-foreground flex gap-2">
+                      <span className="text-primary font-black flex-shrink-0">•</span> <span>{s}</span>
                     </li>
                   ))}
                 </ul>
               </div>
               <div className="h-px bg-muted"></div>
               <div className="space-y-4">
-                <h4 className="flex items-center gap-2 font-black text-secondary-foreground uppercase text-[10px] tracking-widest">Para Docentes</h4>
+                <h4 className="flex items-center gap-2 font-black text-secondary-foreground uppercase text-[9px] md:text-[10px] tracking-widest">
+                  <GraduationCap className="w-3 h-3" /> Para Docentes
+                </h4>
                 <ul className="space-y-3">
                   {localPlan.suggestionsForTeachers.map((s: string, i: number) => (
-                    <li key={i} className="text-sm text-muted-foreground flex gap-2">
-                      <span className="text-secondary-foreground font-black">•</span> {s}
+                    <li key={i} className="text-xs md:text-sm text-muted-foreground flex gap-2">
+                      <span className="text-secondary-foreground font-black flex-shrink-0">•</span> <span>{s}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             </AppCard>
 
-            <div className="grid gap-4">
-              <AppButton className="w-full h-16 text-lg" onClick={() => router.push(`/child/${childId}/child-mode`)}>
+            <div className="grid gap-3 pt-4">
+              <AppButton className="w-full h-16 text-lg shadow-lg" onClick={() => router.push(`/child/${childId}/child-mode`)}>
                 EMPEZAR ACTIVIDADES
               </AppButton>
               <div className="flex flex-col gap-2">
-                <AppButton variant="outline" className="w-full h-12 text-xs font-black uppercase gap-2" onClick={handleGeneratePlan}>
+                <AppButton variant="outline" className="w-full h-12 text-[10px] font-black uppercase gap-2" onClick={handleGeneratePlan}>
                   <RotateCcw className="w-3 h-3" /> Regenerar Plan
                 </AppButton>
-                <AppButton variant="ghost" className="w-full h-12 text-muted-foreground font-black text-xs uppercase gap-2" onClick={() => router.push(`/child/${childId}/dashboard`)}>
+                <AppButton variant="ghost" className="w-full h-12 text-muted-foreground font-black text-[10px] uppercase gap-2" onClick={() => router.push(`/child/${childId}/dashboard`)}>
                   <LayoutDashboard className="w-4 h-4" /> Volver al Dashboard
                 </AppButton>
               </div>
@@ -230,7 +240,7 @@ export default function LearningPlanPage() {
             title="Analizar resultados" 
             description="Hemos analizado la evaluación. Haz clic abajo para generar el plan de desarrollo." 
             actionLabel="Generar Plan ahora"
-            onAction={() => handleGeneratePlan()}
+            onAction={handleGeneratePlan}
           />
         )}
       </div>
