@@ -44,6 +44,20 @@
       },
       "required": ["id", "createdBy", "name", "teaLevel", "institutionId", "groupId"]
     },
+    "Institution": {
+      "title": "Institution",
+      "description": "Academic institution",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "normalizedName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["id", "name", "normalizedName"]
+    },
     "Assessment": {
       "title": "Initial Assessment",
       "description": "Initial developmental assessment scores",
@@ -110,6 +124,10 @@
     "/children/{childId}": {
       "schema": "Child",
       "description": "Children profiles"
+    },
+    "/institutions/{instId}": {
+      "schema": "Institution",
+      "description": "Available institutions"
     },
     "/children/{childId}/assessments/{assessmentId}": {
       "schema": "Assessment",

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Timestamp } from 'firebase/firestore';
@@ -50,9 +51,19 @@ export interface Child {
   stars: number;
   institutionId: string;
   institutionName: string;
+  institution?: string; // Campo de compatibilidad
   groupId: string;
   groupName: string;
   summary?: ChildSummary;
+}
+
+export interface Institution {
+  id: string;
+  name: string;
+  normalizedName: string;
+  createdAt: string;
+  createdBy: string;
+  active: boolean;
 }
 
 export interface GameQuestion {
