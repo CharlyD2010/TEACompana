@@ -1,32 +1,39 @@
-
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppCard, AppButton, LoadingState } from '@/components/app-components';
-import { Trophy, Star, RotateCcw, Clock, Target, AlertCircle, ArrowRight, LayoutDashboard, Users } from 'lucide-react';
+import { Trophy, Star, RotateCcw, Clock, Target, AlertCircle, ArrowRight, LayoutDashboard, Users, ChevronRight } from 'lucide-react';
 import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 export default function ResultsPage() {
-  const { childId, sessionId } = useParams();
+  const params = useParams();
+  const childId = params?.childId as string;
+  const sessionId = params?.sessionId as string;
   const router = useRouter();
   const db = useFirestore();
   
-  const sessionRef = db && childId && sessionId 
-    ? doc(db, 'children', childId as string, 'game_sessions', sessionId as string) 
-    : null;
+  const sessionRef = useMemo(() => 
+    db && childId && sessionId ? doc(db, 'children', childId, 'game_sessions', sessionId) : null
+  , [db, childId, sessionId]);
     
   const { data: session, loading, error } = useDoc(sessionRef);
 
-  if (loading) return <div className="min-h-screen bg-primary flex items-center justify-center"><LoadingState message="Cargando resultados..." /></div>;
+  // Determinar si el siguiente nivel está disponible
+  const canGoToNextLevel = useMemo(() => {
+    if (!session) return false;
+    return session.levelId < 3 && session.stars >= 2;
+  }, [session]);
+
+  if (loading) return <div className="min-h-screen bg-primary flex items-center justify-center"><LoadingState message="Cargando tus logros..." /></div>;
   
   if (error || !session) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center space-y-6">
         <AlertCircle className="w-16 h-16 text-destructive" />
         <h2 className="text-2xl font-black text-primary uppercase">¡Ups! No encontramos el resultado</h2>
-        <p className="text-muted-foreground">Hubo un problema de permisos o la sesión no existe.</p>
+        <p className="text-muted-foreground font-medium">Hubo un problema al cargar los datos o la sesión no existe.</p>
         <AppButton onClick={() => router.push(`/child/${childId}/activities`)}>Volver a Actividades</AppButton>
       </div>
     );
@@ -43,7 +50,7 @@ export default function ResultsPage() {
               <Trophy className="w-12 h-12 text-accent-foreground" />
             </div>
             <h2 className="text-5xl font-black text-primary uppercase tracking-tighter">¡Muy Bien!</h2>
-            <p className="font-black text-muted-foreground uppercase tracking-widest text-xs">{session.gameName}</p>
+            <p className="font-black text-muted-foreground uppercase tracking-widest text-[10px]">{session.gameName}</p>
           </div>
           
           <div className="flex justify-center gap-3">
@@ -66,46 +73,56 @@ export default function ResultsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 text-xs font-bold text-muted-foreground uppercase bg-muted/30 p-4 rounded-2xl">
+          <div className="grid grid-cols-2 gap-4 text-[10px] font-black text-muted-foreground uppercase bg-muted/30 p-4 rounded-2xl tracking-widest">
             <div className="flex items-center justify-center gap-2">
-              <Clock className="w-4 h-4" /> {session.durationSeconds} seg
+              <Clock className="w-4 h-4" /> {session.durationSeconds} SEG
             </div>
             <div className="flex items-center justify-center gap-2">
-              <Target className="w-4 h-4" /> {session.correctAnswers}/{session.totalQuestions || (session.correctAnswers + session.incorrectAnswers)}
+              <Target className="w-4 h-4" /> {session.correctAnswers}/{session.totalQuestions}
             </div>
           </div>
 
           <div className="flex flex-col gap-3 pt-4">
-            <AppButton 
-              className="h-16 text-lg bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-lg rounded-2xl group" 
-              onClick={() => router.push(`/child/${childId}/game/${session.gameId}`)}
-            >
-              <RotateCcw className="mr-2 w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-              REPETIR JUEGO
-            </AppButton>
+            {canGoToNextLevel && (
+              <AppButton 
+                className="h-16 text-lg bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-lg rounded-2xl group animate-pulse" 
+                onClick={() => router.push(`/child/${childId}/game/${session.gameId}?lvl=${session.levelId + 1}`)}
+              >
+                SIGUIENTE NIVEL
+                <ChevronRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+              </AppButton>
+            )}
             
-            <AppButton 
-              className="h-16 text-lg bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg rounded-2xl group" 
-              onClick={() => router.push(`/child/${childId}/activities`)}
-            >
-              <ArrowRight className="mr-2 w-5 h-5" />
-              JUGAR OTRO JUEGO
-            </AppButton>
-
             <div className="grid grid-cols-2 gap-3">
               <AppButton 
                 variant="outline" 
-                className="h-14 text-sm border-2 border-primary/20 text-primary hover:bg-primary/5 rounded-2xl gap-2" 
-                onClick={() => router.push(`/child/${childId}/dashboard`)}
+                className="h-16 text-[10px] border-2 border-secondary/30 text-secondary-foreground hover:bg-secondary/5 rounded-2xl gap-2 font-black uppercase tracking-widest" 
+                onClick={() => router.push(`/child/${childId}/game/${session.gameId}?lvl=${session.levelId}`)}
               >
-                <LayoutDashboard className="w-4 h-4" /> DASHBOARD
+                <RotateCcw className="w-4 h-4" /> REPETIR NIVEL
               </AppButton>
               <AppButton 
-                variant="outline" 
-                className="h-14 text-sm border-2 border-primary/20 text-primary hover:bg-primary/5 rounded-2xl gap-2" 
+                className="h-16 text-[10px] bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg rounded-2xl gap-2 font-black uppercase tracking-widest" 
+                onClick={() => router.push(`/child/${childId}/activities`)}
+              >
+                <ArrowRight className="w-4 h-4" /> OTRO JUEGO
+              </AppButton>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <AppButton 
+                variant="ghost" 
+                className="h-12 text-[9px] text-muted-foreground hover:text-primary rounded-2xl gap-2 font-black uppercase tracking-widest" 
+                onClick={() => router.push(`/child/${childId}/dashboard`)}
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" /> DASHBOARD
+              </AppButton>
+              <AppButton 
+                variant="ghost" 
+                className="h-12 text-[9px] text-muted-foreground hover:text-primary rounded-2xl gap-2 font-black uppercase tracking-widest" 
                 onClick={() => router.push('/children')}
               >
-                <Users className="w-4 h-4" /> MIS NIÑOS
+                <Users className="w-3.5 h-3.5" /> MIS NIÑOS
               </AppButton>
             </div>
           </div>

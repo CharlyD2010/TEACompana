@@ -41,7 +41,7 @@ const GAME_LEVELS: Record<string, Record<number, GameLevelData>> = {
       { id: 1, text: 'Alguien me empujó fuerte', options: ['😠', '😊', '😴'], correct: 0 },
       { id: 2, text: 'Mi mamá me dio un abrazo', options: ['😌', '😢', '😰'], correct: 0 },
       { id: 3, text: 'No encuentro mi juguete', options: ['😰', '🤩', '😡'], correct: 0 },
-      { id: 4, text: 'Escuché un ruido extraño', options: ['😨', '😋', '😎'], correct: 0 },
+      { id: 4, text: 'Escuché un ruidito extraño', options: ['😨', '😋', '😎'], correct: 0 },
     ]}
   },
   g2: { // Colores
@@ -51,7 +51,7 @@ const GAME_LEVELS: Record<string, Record<number, GameLevelData>> = {
       { id: 3, text: 'Busca el color VERDE', options: ['🔴', '🔵', '🟢', '🟡'], correct: 2 },
       { id: 4, text: 'Busca el color AMARILLO', options: ['🔴', '🔵', '🟢', '🟡'], correct: 3 },
     ]},
-    2: { name: 'Más Colores', instruction: '¿Conoces estos otros colores?', questions: [
+    2: { name: 'Colores Secundarios', instruction: '¿Conoces estos otros colores?', questions: [
       { id: 1, text: 'Busca el color NARANJA', options: ['🟠', '🟣', '🌸', '🟤'], correct: 0 },
       { id: 2, text: 'Busca el color MORADO', options: ['🟠', '🟣', '🌸', '🟤'], correct: 1 },
       { id: 3, text: 'Busca el color ROSA', options: ['🟠', '🟣', '🌸', '🟤'], correct: 2 },
@@ -61,6 +61,7 @@ const GAME_LEVELS: Record<string, Record<number, GameLevelData>> = {
       { id: 1, text: 'El SOL es de color...', options: ['Amarillo', 'Azul', 'Rojo'], correct: 0 },
       { id: 2, text: 'El CIELO es de color...', options: ['Verde', 'Azul', 'Morado'], correct: 1 },
       { id: 3, text: 'Una MANZANA es...', options: ['Azul', 'Roja', 'Café'], correct: 1 },
+      { id: 4, text: 'Las HOJAS son...', options: ['Rojas', 'Verdes', 'Amarillas'], correct: 1 },
     ]}
   },
   g3: { // Letras
@@ -84,31 +85,43 @@ const GAME_LEVELS: Record<string, Record<number, GameLevelData>> = {
     ]}
   },
   g4: { // Rutinas
-    1: { name: 'Hábitos Saludables', instruction: '¿Cuál es el hábito correcto?', questions: [
+    1: { name: 'Hábitos Buenos', instruction: '¿Cuál es el hábito correcto?', questions: [
       { id: 1, text: 'Antes de comer debemos...', options: ['🧼 Lavar manos', '🎮 Jugar'], correct: 0 },
       { id: 2, text: 'Después de comer debemos...', options: ['😴 Dormir', '🪥 Cepillar dientes'], correct: 1 },
+      { id: 3, text: 'Para dormir bien debemos...', options: ['👕 Poner pijama', '🏃 Correr'], correct: 0 },
+      { id: 4, text: 'Al terminar de jugar...', options: ['🧸 Guardar juguetes', '🚪 Salir'], correct: 0 },
     ]},
-    2: { name: 'Secuencia de Lavado', instruction: '¿Qué paso sigue?', questions: [
+    2: { name: '¿Qué sigue?', instruction: 'Completa la secuencia', questions: [
       { id: 1, text: '1. Mojar manos, 2. Poner jabón, 3. ...', options: ['🧤 Secar', '🧼 Tallar'], correct: 1 },
       { id: 2, text: 'Ya tallamos las manos, ahora toca...', options: ['🚿 Enjuagar', '🍎 Comer'], correct: 0 },
+      { id: 3, text: 'Puse pasta en el cepillo, ahora voy a...', options: ['🦷 Cepillar', '👅 Comer'], correct: 0 },
+      { id: 4, text: 'Terminé de bañarme, ahora me voy a...', options: ['🚿 Mojar', '👕 Vestir'], correct: 1 },
     ]},
     3: { name: 'Mi Rutina Diaria', instruction: 'Ordena la mañana', questions: [
       { id: 1, text: '¿Qué haces PRIMERO al despertar?', options: ['🥣 Desayunar', '🛌 Salir de cama'], correct: 1 },
       { id: 2, text: '¿Qué haces después de vestirte?', options: ['🎒 Ir a la escuela', '🛌 Dormir'], correct: 0 },
+      { id: 3, text: '¿Qué haces antes de comer?', options: ['🧼 Lavar manos', '😴 Dormir'], correct: 0 },
+      { id: 4, text: '¿Qué haces antes de dormir?', options: ['🌅 Despertar', '📖 Leer cuento'], correct: 1 },
     ]}
   },
   g5: { // Palabras
-    1: { name: 'Objetos Comunes', instruction: 'Mira la imagen y elige la palabra', questions: [
+    1: { name: 'Objetos de Casa', instruction: 'Mira la imagen y elige la palabra', questions: [
       { id: 1, text: '🍎', options: ['Manzana', 'Pera', 'Uva'], correct: 0 },
       { id: 2, text: '🐶', options: ['Gato', 'Perro', 'Pato'], correct: 1 },
+      { id: 3, text: '🚗', options: ['Auto', 'Bici', 'Tren'], correct: 0 },
+      { id: 4, text: '🏠', options: ['Casa', 'Escuela', 'Parque'], correct: 0 },
     ]},
-    2: { name: 'Palabras y Dibujos', instruction: '¿Qué palabra describe el dibujo?', questions: [
-      { id: 1, text: '🏠', options: ['Casa', 'Escuela', 'Parque'], correct: 0 },
-      { id: 2, text: '🚗', options: ['Bici', 'Auto', 'Avión'], correct: 1 },
+    2: { name: '¿Dónde está?', instruction: '¿Qué palabra describe el dibujo?', questions: [
+      { id: 1, text: '🥛', options: ['Agua', 'Leche', 'Jugo'], correct: 1 },
+      { id: 2, text: '👟', options: ['Zapato', 'Bota', 'Tenis'], correct: 0 },
+      { id: 3, text: '🪑', options: ['Silla', 'Mesa', 'Cama'], correct: 0 },
+      { id: 4, text: '☀️', options: ['Luna', 'Nube', 'Sol'], correct: 2 },
     ]},
     3: { name: 'Categorías', instruction: '¿A qué grupo pertenece?', questions: [
       { id: 1, text: 'Un PLÁTANO es una...', options: ['Fruta', 'Juguete', 'Ropa'], correct: 0 },
       { id: 2, text: 'Un CALCETÍN es...', options: ['Comida', 'Ropa', 'Animal'], correct: 1 },
+      { id: 3, text: 'Un LEÓN es un...', options: ['Vehículo', 'Instrumento', 'Animal'], correct: 2 },
+      { id: 4, text: 'Una GUITARRA es...', options: ['Comida', 'Instrumento', 'Mueble'], correct: 1 },
     ]}
   },
   g6: { // Sonidos
@@ -116,17 +129,19 @@ const GAME_LEVELS: Record<string, Record<number, GameLevelData>> = {
       { id: 1, text: '¿Qué animal suena así?', options: ['🐶 Perro', '🐱 Gato'], correct: 0, audio: '/audio/animals/perro.mp3' },
       { id: 2, text: '¿Qué animal suena así?', options: ['🐔 Gallo', '🐮 Vaca'], correct: 1, audio: '/audio/animals/vaca.mp3' },
       { id: 3, text: '¿Qué animal suena así?', options: ['🐱 Gato', '🐷 Cerdito'], correct: 0, audio: '/audio/animals/gato.mp3' },
+      { id: 4, text: '¿Qué animal suena así?', options: ['🐑 Oveja', '🐴 Caballo'], correct: 1, audio: '/audio/animals/caballo.mp3' },
     ]},
     2: { name: 'Cosas que Suenan', instruction: '¿Sabes qué objeto es?', questions: [
       { id: 1, text: 'Escucha con atención...', options: ['🚗 Auto', '🚆 Tren', '🔔 Campana'], correct: 0, audio: '/audio/objects/auto.mp3' },
       { id: 2, text: 'Escucha con atención...', options: ['🚆 Tren', '🚗 Auto', '🔔 Campana'], correct: 0, audio: '/audio/objects/tren.mp3' },
       { id: 3, text: 'Escucha con atención...', options: ['🔔 Campana', '🚆 Tren', '🚗 Auto'], correct: 0, audio: '/audio/objects/campana.mp3' },
+      { id: 4, text: 'Escucha con atención...', options: ['📞 Teléfono', '🚪 Puerta'], correct: 0, audio: '/audio/objects/telefono.mp3' },
     ]},
     3: { name: 'Sonidos del Mundo', instruction: 'Identifica el sonido correcto', questions: [
       { id: 1, text: '¿Qué es esto?', options: ['🌧️ Lluvia', '📞 Teléfono', '🚪 Puerta', '🦁 León'], correct: 0, audio: '/audio/objects/lluvia.mp3' },
-      { id: 2, text: '¿Qué es esto?', options: ['📞 Teléfono', '🌧️ Lluvia', '🚪 Puerta', '🦁 León'], correct: 0, audio: '/audio/objects/telefono.mp3' },
+      { id: 2, text: '¿Qué es esto?', options: ['🦁 León', '🌧️ Lluvia', '📞 Teléfono', '🚪 Puerta'], correct: 0, audio: '/audio/animals/leon.mp3' },
       { id: 3, text: '¿Qué es esto?', options: ['🚪 Puerta', '🌧️ Lluvia', '📞 Teléfono', '🦁 León'], correct: 0, audio: '/audio/objects/puerta.mp3' },
-      { id: 4, text: '¿Qué es esto?', options: ['🦁 León', '🌧️ Lluvia', '📞 Teléfono', '🚪 Puerta'], correct: 0, audio: '/audio/animals/leon.mp3' },
+      { id: 4, text: '¿Qué es esto?', options: ['🐦 Pájaro', '🌊 Mar', '🌪️ Viento'], correct: 0, audio: '/audio/animals/pajaro.mp3' },
     ]}
   },
   g7: { // Formas
@@ -134,16 +149,19 @@ const GAME_LEVELS: Record<string, Record<number, GameLevelData>> = {
       { id: 1, text: 'CÍRCULO', options: ['⭕', '⬜', '🔺'], correct: 0 },
       { id: 2, text: 'CUADRADO', options: ['⭕', '⬜', '🔺'], correct: 1 },
       { id: 3, text: 'TRIÁNGULO', options: ['⭕', '⬜', '🔺'], correct: 2 },
+      { id: 4, text: 'RECTÁNGULO', options: ['⬜', '📏', '⭕'], correct: 0 },
     ]},
     2: { name: 'Nuevas Formas', instruction: 'Identifica estas figuras', questions: [
       { id: 1, text: 'ESTRELLA', options: ['⭐', '❤️', '💎'], correct: 0 },
       { id: 2, text: 'CORAZÓN', options: ['⭐', '❤️', '💎'], correct: 1 },
       { id: 3, text: 'ROMBO', options: ['⭐', '❤️', '💎'], correct: 2 },
+      { id: 4, text: 'ÓVALO', options: ['🥚', '⬜', '🔺'], correct: 0 },
     ]},
     3: { name: 'Objetos y Formas', instruction: '¿Qué forma tiene?', questions: [
       { id: 1, text: 'Una VENTANA es...', options: ['Círculo', 'Cuadrado'], correct: 1 },
       { id: 2, text: 'Una PELOTA es...', options: ['Círculo', 'Cuadrado'], correct: 0 },
       { id: 3, text: 'Un TECHO es...', options: ['Triángulo', 'Rectángulo'], correct: 0 },
+      { id: 4, text: 'Un HUEVO es un...', options: ['Óvalo', 'Cuadrado'], correct: 0 },
     ]}
   },
   g8: { // Conteo
@@ -151,21 +169,27 @@ const GAME_LEVELS: Record<string, Record<number, GameLevelData>> = {
       { id: 1, text: '🍎 🍎', options: ['1', '2', '3'], correct: 1 },
       { id: 2, text: '⭐', options: ['1', '2', '3'], correct: 0 },
       { id: 3, text: '🧸 🧸 🧸', options: ['2', '3', '4'], correct: 1 },
+      { id: 4, text: '⚽ ⚽ ⚽ ⚽', options: ['3', '4', '5'], correct: 1 },
     ]},
     2: { name: 'Contar hasta 10', instruction: 'Cuenta con cuidado', questions: [
       { id: 1, text: '🍎 🍎 🍎 🍎 🍎 🍎', options: ['5', '6', '7'], correct: 1 },
       { id: 2, text: '🧤 🧤 🧤 🧤', options: ['3', '4', '5'], correct: 1 },
       { id: 3, text: '🚗 🚗 🚗 🚗 🚗 🚗 🚗 🚗', options: ['7', '8', '9'], correct: 1 },
+      { id: 4, text: '⭐ ⭐ 10 estrellas', options: ['8', '9', '10'], correct: 2 },
     ]},
-    3: { name: 'Comparar Cantidades', instruction: '¿Dónde hay más?', questions: [
+    3: { name: 'Más o Menos', instruction: '¿Dónde hay más?', questions: [
       { id: 1, text: 'A: 🍎🍎 | B: 🍎', options: ['A', 'B'], correct: 0 },
       { id: 2, text: 'A: ⭐ | B: ⭐⭐⭐', options: ['A', 'B'], correct: 1 },
+      { id: 3, text: 'A: ⚽⚽ | B: ⚽⚽⚽', options: ['A', 'B'], correct: 1 },
+      { id: 4, text: 'A: 🧸🧸🧸 | B: 🧸', options: ['A', 'B'], correct: 0 },
     ]}
   }
 };
 
 export default function GamePlayPage() {
-  const { childId, gameId } = useParams();
+  const params = useParams();
+  const childId = params?.childId as string;
+  const gameId = params?.gameId as string;
   const router = useRouter();
   const db = useFirestore();
   const { user } = useUser();
@@ -181,12 +205,12 @@ export default function GamePlayPage() {
 
   const gameData = useMemo(() => {
     if (!gameId) return null;
-    return GAME_LEVELS[gameId as string] || GAME_LEVELS.g1;
+    return GAME_LEVELS[gameId] || null;
   }, [gameId]);
 
   const levelData = useMemo(() => {
     if (!gameData) return null;
-    return gameData[currentLevel] || gameData[1];
+    return gameData[currentLevel] || null;
   }, [gameData, currentLevel]);
 
   const currentQ = useMemo(() => {
@@ -235,7 +259,7 @@ export default function GamePlayPage() {
       toast({ 
         variant: "destructive", 
         title: "Audio no disponible", 
-        description: "El sonido todavía no está disponible." 
+        description: "El sonido todavía no está disponible físicamente." 
       });
     };
     audio.play().catch(err => {
@@ -260,12 +284,9 @@ export default function GamePlayPage() {
 
   const playInstruction = useCallback(() => {
     if (!currentQ) return;
-    
-    // Si la pregunta tiene un audio real (Juego de Sonidos), lo reproducimos
     if (currentQ.audio) {
       playLocalAudio(currentQ.audio);
     } else {
-      // Si no, usamos TTS como respaldo para leer la pregunta
       speak(currentQ.text);
     }
   }, [currentQ, playLocalAudio, speak]);
@@ -283,8 +304,8 @@ export default function GamePlayPage() {
 
     const sessionData: Partial<GameSession> = {
       id: sessionId,
-      childId: childId as string,
-      gameId: gameId as string,
+      childId: childId,
+      gameId: gameId,
       levelId: currentLevel,
       userId: user.uid,
       gameName: `${levelData.name}`,
@@ -299,33 +320,38 @@ export default function GamePlayPage() {
     };
 
     try {
-      await setDoc(doc(db, 'children', childId as string, 'game_sessions', sessionId), sessionData);
+      await setDoc(doc(db, 'children', childId, 'game_sessions', sessionId), sessionData);
 
       const progressId = `${childId}_${gameId}_lvl${currentLevel}`;
-      await setDoc(doc(db, 'children', childId as string, 'game_progress', progressId), {
+      await setDoc(doc(db, 'children', childId, 'game_progress', progressId), {
         id: progressId,
         childId,
         gameId,
         levelId: currentLevel,
         stars,
-        completed: stars > 0,
+        completed: true,
         updatedAt: serverTimestamp(),
       }, { merge: true });
 
+      // Desbloqueo de siguiente nivel si obtuvo 2 estrellas o más
       if (stars >= 2 && currentLevel < 3) {
         const nextLvlId = `${childId}_${gameId}_lvl${currentLevel + 1}`;
-        await setDoc(doc(db, 'children', childId as string, 'game_progress', nextLvlId), {
+        await setDoc(doc(db, 'children', childId, 'game_progress', nextLvlId), {
+          id: nextLvlId,
+          childId,
+          gameId,
+          levelId: currentLevel + 1,
           unlocked: true,
           updatedAt: serverTimestamp()
         }, { merge: true });
       }
 
-      await updateDoc(doc(db, 'children', childId as string), {
+      await updateDoc(doc(db, 'children', childId), {
         points: increment(finalCorrect * 20),
         stars: increment(stars)
       });
 
-      await rewardService.checkAndAwardBadges(db, childId as string, sessionData);
+      await rewardService.checkAndAwardBadges(db, childId, sessionData);
 
       router.push(`/child/${childId}/results/${sessionId}`);
     } catch (e: any) {
@@ -334,7 +360,7 @@ export default function GamePlayPage() {
         path: `/children/${childId}/game_sessions/${sessionId}`,
         operation: 'create',
         requestResourceData: sessionData
-      }));
+      } as any));
     }
   }, [db, user, childId, levelData, results.startTime, gameId, currentLevel, router, stopAudio]);
 
@@ -359,14 +385,14 @@ export default function GamePlayPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-10 text-center space-y-6">
         <AlertCircle className="w-16 h-16 text-destructive opacity-50" />
-        <h2 className="text-2xl font-black text-primary uppercase">Juego no disponible</h2>
-        <p className="text-muted-foreground font-medium">No pudimos cargar los datos de esta actividad.</p>
+        <h2 className="text-2xl font-black text-primary uppercase">Actividad no encontrada</h2>
+        <p className="text-muted-foreground font-medium">Lo sentimos, no pudimos cargar los datos de esta actividad o nivel.</p>
         <AppButton onClick={() => router.push(`/child/${childId}/activities`)} aria-label="Volver a Actividades">Volver a Actividades</AppButton>
       </div>
     );
   }
 
-  if (isFinishing) return <LoadingState message="Guardando tu progreso..." />;
+  if (isFinishing) return <LoadingState message="Guardando tu progreso académico..." />;
 
   const isSoundGame = gameId === 'g6';
 
@@ -386,7 +412,7 @@ export default function GamePlayPage() {
             <AlertDialogContent className="rounded-[2.5rem]">
               <AlertDialogHeader>
                 <AlertDialogTitle className="font-black text-2xl uppercase text-primary">¿Quieres salir?</AlertDialogTitle>
-                <AlertDialogDescription className="font-bold text-base">Si sales ahora, no se guardará el puntaje de este nivel.</AlertDialogDescription>
+                <AlertDialogDescription className="font-bold text-base text-muted-foreground">Si sales ahora, no se guardará el progreso de este nivel.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="gap-3">
                 <AppButton className="w-full bg-destructive text-white" onClick={() => { stopAudio(); router.push(`/child/${childId}/activities`); }} aria-label="Confirmar salida">Sí, salir</AppButton>
@@ -431,18 +457,22 @@ export default function GamePlayPage() {
         <div className={`grid gap-4 md:gap-6 w-full ${currentQ.options.length > 2 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
           {currentQ.options.map((opt: string, i: number) => {
              const isCorrect = i === currentQ.correct;
+             const isTextOnly = opt.length > 3 || (opt.length > 1 && !opt.match(/\p{Emoji}/u));
+             
              return (
               <button 
                 key={i} 
                 onClick={() => handleOption(i)} 
-                className={`min-h-[140px] md:min-h-[180px] p-4 text-4xl md:text-7xl bg-white rounded-[2.5rem] shadow-xl border-4 border-transparent transition-all active:scale-95 flex items-center justify-center relative overflow-hidden group
+                className={`min-h-[140px] md:min-h-[180px] p-4 bg-white rounded-[2.5rem] shadow-xl border-4 border-transparent transition-all active:scale-95 flex items-center justify-center relative overflow-hidden group
                   ${feedback === 'correct' && isCorrect ? 'border-secondary bg-secondary/10 scale-105' : ''}
                   ${feedback === 'wrong' && !isCorrect && feedback === 'wrong' ? 'opacity-40 grayscale blur-[1px]' : ''}
                 `}
                 disabled={!!feedback}
                 aria-label={`Opción ${i + 1}: ${opt}`}
               >
-                <span className="select-none font-black text-center leading-none">{opt}</span>
+                <span className={`select-none font-black text-center leading-tight ${isTextOnly ? 'text-xl md:text-3xl lg:text-4xl' : 'text-5xl md:text-7xl lg:text-8xl'}`}>
+                  {opt}
+                </span>
                 {feedback === 'correct' && isCorrect && <div className="absolute inset-0 bg-secondary/20 animate-ping" />}
               </button>
              );
