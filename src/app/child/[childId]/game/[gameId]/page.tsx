@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AppButton, LoadingState, AppCard } from '@/components/app-components';
-import { CheckCircle2, XCircle, Trophy, Volume2, X, Star, HelpCircle, ArrowRight, RotateCcw, AlertCircle } from 'lucide-react';
+import { AppButton, LoadingState } from '@/components/app-components';
+import { CheckCircle2, XCircle, Volume2, X, Star, AlertCircle } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { rewardService } from '@/services/rewardService';
+import { GameLevelData, GameQuestion, GameSession } from '@/lib/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const GAME_LEVELS: Record<string, Record<number, any>> = {
+const GAME_LEVELS: Record<string, Record<number, GameLevelData>> = {
   g1: { // Emociones
     1: { name: 'Emociones Básicas', instruction: 'Toca el personaje que se siente así', questions: [
       { id: 1, text: '¿Quién está FELIZ?', options: ['😊', '😢', '😠', '😰'], correct: 0 },
@@ -127,7 +128,6 @@ export default function GamePlayPage() {
     return levelData.questions[currentIdx];
   }, [levelData, currentIdx]);
 
-  // Robust Audio Cleanup
   const stopAudio = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -144,14 +144,12 @@ export default function GamePlayPage() {
   }, [stopAudio]);
 
   useEffect(() => {
-    // Al cambiar de pregunta, detener cualquier audio previo
     stopAudio();
   }, [currentIdx, stopAudio]);
 
   const playInstruction = useCallback(() => {
     stopAudio();
     setIsPlayingAudio(true);
-    // Simulación de audio con temporizador para control de UI
     const timer = setTimeout(() => setIsPlayingAudio(false), 2500);
     return () => clearTimeout(timer);
   }, [stopAudio]);
@@ -167,7 +165,7 @@ export default function GamePlayPage() {
     const duration = Math.floor((Date.now() - results.startTime) / 1000);
     const sessionId = Math.random().toString(36).substring(2, 11);
 
-    const sessionData = {
+    const sessionData: Partial<GameSession> = {
       id: sessionId,
       childId: childId as string,
       gameId: gameId as string,
@@ -185,10 +183,8 @@ export default function GamePlayPage() {
     };
 
     try {
-      // Guardar sesión histórica
       await setDoc(doc(db, 'children', childId as string, 'game_sessions', sessionId), sessionData);
 
-      // Actualizar progreso por nivel
       const progressId = `${childId}_${gameId}_lvl${currentLevel}`;
       await setDoc(doc(db, 'children', childId as string, 'game_progress', progressId), {
         id: progressId,
@@ -200,7 +196,6 @@ export default function GamePlayPage() {
         updatedAt: serverTimestamp(),
       }, { merge: true });
 
-      // Desbloqueo de siguiente nivel si obtuvo al menos 2 estrellas
       if (stars >= 2 && currentLevel < 3) {
         const nextLvlId = `${childId}_${gameId}_lvl${currentLevel + 1}`;
         await setDoc(doc(db, 'children', childId as string, 'game_progress', nextLvlId), {
@@ -209,13 +204,11 @@ export default function GamePlayPage() {
         }, { merge: true });
       }
 
-      // Totales del niño
       await updateDoc(doc(db, 'children', childId as string), {
         points: increment(finalCorrect * 20),
         stars: increment(stars)
       });
 
-      // Revisar insignias
       await rewardService.checkAndAwardBadges(db, childId as string, sessionData);
 
       router.push(`/child/${childId}/results/${sessionId}`);
@@ -252,7 +245,7 @@ export default function GamePlayPage() {
         <AlertCircle className="w-16 h-16 text-destructive opacity-50" />
         <h2 className="text-2xl font-black text-primary uppercase">Juego no disponible</h2>
         <p className="text-muted-foreground font-medium">No pudimos cargar los datos de esta actividad.</p>
-        <AppButton onClick={() => router.push(`/child/${childId}/activities`)}>Volver a Actividades</AppButton>
+        <AppButton onClick={() => router.push(`/child/${childId}/activities`)} aria-label="Volver a Actividades">Volver a Actividades</AppButton>
       </div>
     );
   }
@@ -260,13 +253,15 @@ export default function GamePlayPage() {
   if (isFinishing) return <LoadingState message="Guardando tu progreso..." />;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-hidden">
-      {/* Cabecera del Juego */}
+    <div className="min-h-screen min-h-[100dvh] bg-background flex flex-col overflow-hidden">
       <div className="p-4 md:p-6 flex items-center justify-between bg-white border-b-4 border-muted/30">
         <div className="flex items-center gap-4">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <button className="w-12 h-12 bg-muted rounded-[1.2rem] flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
+              <button 
+                className="w-12 h-12 bg-muted rounded-[1.2rem] flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                aria-label="Salir del juego"
+              >
                 <X className="w-6 h-6" />
               </button>
             </AlertDialogTrigger>
@@ -276,8 +271,8 @@ export default function GamePlayPage() {
                 <AlertDialogDescription className="font-bold text-base">Si sales ahora, no se guardará el puntaje de este nivel.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="gap-3">
-                <AppButton className="w-full bg-destructive text-white" onClick={() => { stopAudio(); router.push(`/child/${childId}/activities`); }}>Sí, salir</AppButton>
-                <AlertDialogCancel className="w-full rounded-2xl border-2 font-black uppercase text-xs">Seguir jugando</AlertDialogCancel>
+                <AppButton className="w-full bg-destructive text-white" onClick={() => { stopAudio(); router.push(`/child/${childId}/activities`); }} aria-label="Confirmar salida">Sí, salir</AppButton>
+                <AlertDialogCancel className="w-full rounded-2xl border-2 font-black uppercase text-xs" aria-label="Continuar jugando">Seguir jugando</AlertDialogCancel>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -293,12 +288,12 @@ export default function GamePlayPage() {
         </div>
       </div>
 
-      {/* Instrucción con Audio */}
       <div className="bg-white/50 py-3 px-6 flex justify-center border-b-2 border-muted/10">
         <button 
           onClick={playInstruction}
           className={`flex items-center gap-3 px-6 py-2.5 rounded-full border-2 transition-all ${isPlayingAudio ? 'bg-primary border-primary text-white scale-105 shadow-lg' : 'bg-white border-primary/20 text-primary hover:border-primary/50'}`}
           disabled={isPlayingAudio}
+          aria-label={isPlayingAudio ? 'Escuchando instrucción' : 'Escuchar instrucción'}
         >
           <Volume2 className={`w-5 h-5 ${isPlayingAudio ? 'animate-pulse' : ''}`} />
           <span className="text-[11px] font-black uppercase tracking-widest">
@@ -307,8 +302,7 @@ export default function GamePlayPage() {
         </button>
       </div>
 
-      {/* Área de Juego Central */}
-      <div className="flex-1 p-6 flex flex-col items-center justify-center space-y-8 md:space-y-12 max-w-4xl mx-auto w-full">
+      <div className="flex-1 p-6 flex flex-col items-center justify-center space-y-8 md:space-y-12 max-w-4xl mx-auto w-full overflow-y-auto">
         <div className="text-center space-y-6 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="bg-white p-8 md:p-10 rounded-[3rem] shadow-2xl border-4 border-primary/5 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-primary/10"></div>
@@ -316,7 +310,6 @@ export default function GamePlayPage() {
           </div>
         </div>
 
-        {/* Opciones Adaptables */}
         <div className={`grid gap-4 md:gap-6 w-full ${currentQ.options.length > 2 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
           {currentQ.options.map((opt: string, i: number) => {
              const isCorrect = i === currentQ.correct;
@@ -329,6 +322,7 @@ export default function GamePlayPage() {
                   ${feedback === 'wrong' && !isCorrect && feedback === 'wrong' ? 'opacity-40 grayscale blur-[1px]' : ''}
                 `}
                 disabled={!!feedback}
+                aria-label={`Opción ${i + 1}: ${opt}`}
               >
                 <span className="select-none font-black text-center leading-none">{opt}</span>
                 {feedback === 'correct' && isCorrect && <div className="absolute inset-0 bg-secondary/20 animate-ping" />}
@@ -338,7 +332,6 @@ export default function GamePlayPage() {
         </div>
       </div>
 
-      {/* Feedback Overlay Sensorialmente Amigable */}
       {feedback && (
         <div className="fixed inset-0 flex items-center justify-center backdrop-blur-md z-50 animate-in fade-in duration-300">
           <div className="bg-white/95 p-12 rounded-[4rem] shadow-2xl border-8 border-white text-center animate-in zoom-in-50 duration-500 max-w-xs w-full mx-4">

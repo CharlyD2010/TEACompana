@@ -33,6 +33,8 @@
   }
   body {
     @apply bg-background text-foreground font-body antialiased;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline font-black;
@@ -48,9 +50,21 @@
 }
 
 .safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 1rem);
+  padding-bottom: calc(env(safe-area-inset-bottom, 1rem) + 0.5rem);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .bubble-shadow {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+}
+
+/* Fix for Android Keyboard deformities */
+.game-container {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }

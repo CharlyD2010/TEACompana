@@ -1,4 +1,3 @@
-
 'use client';
 
 import { 
@@ -8,31 +7,39 @@ import {
   getDoc, 
   getDocs, 
   query, 
-  where
+  where,
+  Firestore
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { Child, UserProfile } from '@/lib/types';
 
 export const childrenService = {
-  createChild: async (userId: string, childData: any) => {
+  createChild: async (userId: string, childData: Partial<Child>): Promise<string> => {
     const childId = Math.random().toString(36).substr(2, 9);
     const childRef = doc(db, 'children', childId);
     
-    const newChild = {
-      ...childData,
+    const newChild: Child = {
       id: childId,
       createdBy: userId,
+      name: childData.name || '',
+      birthDate: childData.birthDate || '',
+      teaLevel: childData.teaLevel || 'leve',
+      interests: childData.interests || [],
+      learningStyle: childData.learningStyle || 'visual',
+      avatarUrl: childData.avatarUrl || '',
+      avatarKey: childData.avatarKey || 'cat',
+      medicalNotes: childData.medicalNotes || '',
       institutionId: childData.institutionId || 'la-uni',
       institutionName: childData.institutionName || 'LA-UNI',
       groupId: childData.groupId || 'PED_1',
       groupName: childData.groupId || 'PED_1',
       createdAt: new Date().toISOString(),
-      points: childData.points || 0,
-      stars: childData.stars || 0,
+      points: 0,
+      stars: 0,
     };
 
     await setDoc(childRef, newChild);
 
-    // Relación determinista
     const accessId = `${userId}_${childId}`;
     await setDoc(doc(db, 'child_access', accessId), {
       id: accessId,
@@ -46,39 +53,30 @@ export const childrenService = {
     return childId;
   },
 
-  getChildrenForUser: async (userId: string) => {
+  getChildrenForUser: async (userId: string): Promise<Child[]> => {
     if (!db) return [];
     
     const userDoc = await getDoc(doc(db, 'users', userId));
     if (!userDoc.exists()) return [];
     
-    const userData = userDoc.data();
+    const userData = userDoc.data() as UserProfile;
     
     if (userData.role === 'teacher') {
-      // DOCENTE: Consulta institucional
       const institutionId = userData.institutionId || 'la-uni';
       const assignedGroups = userData.assignedGroups || ['PED_1', 'PED_2', 'PED_3', 'PED_4', 'PED_5'];
 
-      console.log(`[DOCENTE] Consultando alumnos para institución: ${institutionId}, grupos: ${assignedGroups.join(', ')}`);
-
-      // Consulta directa por institución
       const childrenQuery = query(
         collection(db, 'children'),
         where('institutionId', '==', institutionId)
       );
       
       const childrenSnap = await getDocs(childrenQuery);
-      const allInstitutionalChildren = childrenSnap.docs.map(d => d.data());
+      const allInstitutionalChildren = childrenSnap.docs.map(d => d.data() as Child);
       
-      // Filtrado por grupos asignados en cliente para mayor fiabilidad
-      const filtered = allInstitutionalChildren.filter(child => 
+      return allInstitutionalChildren.filter(child => 
         assignedGroups.includes(child.groupId)
       );
-
-      console.log(`[DOCENTE] Encontrados: ${allInstitutionalChildren.length}, Filtrados por grupo: ${filtered.length}`);
-      return filtered;
     } else {
-      // PADRE: Consulta por child_access
       const accessQuery = query(
         collection(db, 'child_access'), 
         where('userId', '==', userId), 
@@ -89,20 +87,20 @@ export const childrenService = {
 
       if (childIds.length === 0) return [];
 
-      const children: any[] = [];
+      const children: Child[] = [];
       for (const id of childIds) {
         const childDoc = await getDoc(doc(db, 'children', id));
         if (childDoc.exists()) {
-          children.push(childDoc.data());
+          children.push(childDoc.data() as Child);
         }
       }
       return children;
     }
   },
 
-  getChildById: async (childId: string) => {
+  getChildById: async (childId: string): Promise<Child | null> => {
     if (!db || !childId) return null;
     const snap = await getDoc(doc(db, 'children', childId));
-    return snap.exists() ? snap.data() : null;
+    return snap.exists() ? (snap.data() as Child) : null;
   }
 };

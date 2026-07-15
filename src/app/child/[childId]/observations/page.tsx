@@ -1,21 +1,22 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AppHeader, AppCard, AppButton, LoadingState } from '@/components/app-components';
+import { AppHeader, AppButton, LoadingState } from '@/components/app-components';
 import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
 import { doc, collection, query, orderBy, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { Send, LayoutDashboard, Users, User, Clock } from 'lucide-react';
+import { Send, User, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { getAvatarEmoji } from '@/lib/avatars';
+import { ChatMessage, UserProfile } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 export default function ObservationsChatPage() {
   const { childId } = useParams();
   const router = useRouter();
   const db = useFirestore();
   const { user } = useUser();
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState<UserProfile | null>(null);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -23,20 +24,25 @@ export default function ObservationsChatPage() {
   useEffect(() => {
     if (user && db) {
       getDoc(doc(db, 'users', user.uid)).then(snap => {
-        if (snap.exists()) setUserData(snap.data());
+        if (snap.exists()) setUserData(snap.data() as UserProfile);
       });
     }
   }, [user, db]);
 
-  const childRef = useMemo(() => db && childId ? doc(db, 'children', childId as string) : null, [db, childId]);
+  const childRef = useMemo(() => 
+    db && childId ? doc(db, 'children', childId as string) : null, 
+  [db, childId]);
+  
   const { data: child, loading: childLoading } = useDoc(childRef);
 
-  const messagesQuery = useMemo(() => db && childId ? query(
-    collection(db, 'children', childId as string, 'messages'),
-    orderBy('createdAt', 'asc')
-  ) : null, [db, childId]);
+  const messagesQuery = useMemo(() => 
+    db && childId ? query(
+      collection(db, 'children', childId as string, 'messages'),
+      orderBy('createdAt', 'asc')
+    ) : null, 
+  [db, childId]);
 
-  const { data: messages, loading: messagesLoading } = useCollection(messagesQuery);
+  const { data: messages, loading: messagesLoading } = useCollection<ChatMessage>(messagesQuery);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -54,7 +60,7 @@ export default function ObservationsChatPage() {
         childId,
         senderId: user.uid,
         senderName: userData.fullName || 'Usuario',
-        senderRole: userData.role,
+        senderRole: userData.role === 'teacher' ? 'teacher' : 'parent',
         senderAvatarKey: userData.avatarKey || null,
         message: message.trim(),
         createdAt: serverTimestamp(),
@@ -70,9 +76,9 @@ export default function ObservationsChatPage() {
   if (childLoading || messagesLoading) return <LoadingState />;
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen min-h-[100dvh] flex flex-col bg-background overflow-hidden">
       <AppHeader 
-        title={`Chat: ${child?.name}`} 
+        title={`Chat: ${child?.name || 'Cargando...'}`} 
         showBackToDashboard={true} 
         showBackToChildren={true}
         childId={childId as string}
@@ -84,10 +90,10 @@ export default function ObservationsChatPage() {
             <div className="w-24 h-24 bg-muted rounded-[2rem] flex items-center justify-center">
               <User className="w-12 h-12 text-muted-foreground opacity-20" />
             </div>
-            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Aún no hay mensajes sobre {child?.name}</p>
+            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Aún no hay mensajes sobre {child?.name || 'el niño'}</p>
           </div>
         ) : (
-          messages.map((msg: any) => {
+          messages.map((msg) => {
             const isMe = msg.senderId === user?.uid;
             return (
               <div 
@@ -138,11 +144,13 @@ export default function ObservationsChatPage() {
             value={message}
             onChange={e => setMessage(e.target.value)}
             disabled={sending}
+            aria-label="Escribir mensaje"
           />
           <AppButton 
             type="submit" 
             className="w-14 h-14 p-0 rounded-2xl bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-lg" 
             disabled={sending || !message.trim()}
+            aria-label="Enviar mensaje"
           >
             <Send className="w-5 h-5" />
           </AppButton>
@@ -150,8 +158,4 @@ export default function ObservationsChatPage() {
       </div>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }
