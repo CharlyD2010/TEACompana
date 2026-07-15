@@ -1,8 +1,18 @@
-
 import type { Metadata, Viewport } from 'next';
+import { PT_Sans } from 'next/font/google';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
 import { Toaster } from '@/components/ui/toaster';
+import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
+
+// Configuración de la fuente oficial PT Sans para evitar parpadeos y errores de hidratación
+const ptSans = PT_Sans({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-pt-sans',
+});
 
 export const metadata: Metadata = {
   title: 'TEACompaña - Educación Especial',
@@ -30,24 +40,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js');
-                });
-              }
-            `,
-          }}
-        />
-      </head>
-      <body className="font-body antialiased selection:bg-primary/30">
+      <body className={`${ptSans.variable} font-body antialiased selection:bg-primary/30`}>
         <FirebaseClientProvider>
+          <ServiceWorkerRegister />
           {children}
           <Toaster />
         </FirebaseClientProvider>
