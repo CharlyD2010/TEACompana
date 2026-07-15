@@ -19,6 +19,21 @@ export interface UserProfile {
   assignedGroups?: string[];
 }
 
+/**
+ * Estadísticas acumuladas para optimizar reportes sin procesar todas las sesiones.
+ */
+export interface ChildSummary {
+  totalSessions: number;
+  totalPoints: number;
+  totalStars: number;
+  totalCorrectAnswers: number;
+  totalIncorrectAnswers: number;
+  totalQuestions: number;
+  totalDurationSeconds: number;
+  lastActivityAt?: string;
+  updatedAt?: any;
+}
+
 export interface Child {
   id: string;
   createdBy: string;
@@ -37,6 +52,7 @@ export interface Child {
   institutionName: string;
   groupId: string;
   groupName: string;
+  summary?: ChildSummary;
 }
 
 export interface GameQuestion {

@@ -5,8 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { AppHeader, AppCard, ProgressBar, LoadingState, EmptyState, AppButton } from '@/components/app-components';
 import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { doc, collection, query, orderBy, limit } from 'firebase/firestore';
-import { TrendingUp, Star, Clock, Target, LayoutDashboard, Users, Sparkles, AlertCircle, Calendar, BookOpen, Lightbulb } from 'lucide-react';
+import { TrendingUp, Star, Target, LayoutDashboard, Users, Sparkles, Calendar, BookOpen, Lightbulb } from 'lucide-react';
+import { Child } from '@/lib/types';
 
+/**
+ * Pantalla de Reporte Pedagógico.
+ * Optimización: Utiliza el sumario pre-calculado del niño para mostrar métricas 
+ * instantáneas, con fallback al procesamiento de sesiones si el sumario no existe.
+ */
 export default function ReportsPage() {
   const { childId } = useParams();
   const router = useRouter();
@@ -20,32 +26,45 @@ export default function ReportsPage() {
     db && childId ? query(
       collection(db, 'children', childId as string, 'game_sessions'),
       orderBy('createdAt', 'desc'),
-      limit(50)
+      limit(20) // Limitamos para el historial visual solamente
     ) : null
   , [db, childId]);
 
-  const { data: child, loading: childLoading } = useDoc(childRef);
+  const { data: childData, loading: childLoading } = useDoc<Child>(childRef as any);
   const { data: sessions, loading: sessionsLoading } = useCollection(sessionsQuery);
 
   const stats = useMemo(() => {
-    if (!sessions?.length) return { totalPoints: 0, avgAccuracy: 0, totalStars: 0, favoriteGame: '-' };
+    // Caso 1: Usar sumario pre-calculado (Optimizado)
+    if (childData?.summary && childData.summary.totalSessions > 0) {
+      const s = childData.summary;
+      return {
+        totalPoints: s.totalPoints,
+        totalStars: s.totalStars,
+        avgAccuracy: s.totalQuestions > 0 ? (s.totalCorrectAnswers / s.totalQuestions) * 100 : 0,
+        totalSessions: s.totalSessions,
+        hasData: true
+      };
+    }
+    
+    // Caso 2: Fallback para sesiones antiguas sin sumario
+    if (!sessions?.length) return { totalPoints: 0, avgAccuracy: 0, totalStars: 0, totalSessions: 0, hasData: false };
     
     const totalPoints = sessions.reduce((acc, s: any) => acc + (s.score || 0), 0);
-    const avgAccuracy = sessions.reduce((acc, s: any) => acc + (s.accuracy || 0), 0) / sessions.length;
+    const totalCorrect = sessions.reduce((acc, s: any) => acc + (s.correctAnswers || 0), 0);
+    const totalQuestions = sessions.reduce((acc, s: any) => acc + (s.totalQuestions || (s.correctAnswers + s.incorrectAnswers) || 0), 0);
     const totalStars = sessions.reduce((acc, s: any) => acc + (s.stars || 0), 0);
     
-    const gameCounts: Record<string, number> = {};
-    sessions.forEach((s: any) => {
-      gameCounts[s.gameName] = (gameCounts[s.gameName] || 0) + 1;
-    });
-    const favoriteGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '-';
+    return { 
+      totalPoints, 
+      avgAccuracy: totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0, 
+      totalStars, 
+      totalSessions: sessions.length,
+      hasData: true 
+    };
+  }, [sessions, childData]);
 
-    return { totalPoints, avgAccuracy, totalStars, favoriteGame };
-  }, [sessions]);
-
-  // Recomendaciones Pedagógicas Basadas en Datos (Resiliente a falta de datos)
   const recommendations = useMemo(() => {
-    if (!sessions?.length) {
+    if (!stats.hasData) {
       return [
         "Inicia con el juego de 'Emociones' para evaluar el reconocimiento visual.",
         "Te recomendamos realizar la Evaluación Inicial para un plan más preciso.",
@@ -54,26 +73,20 @@ export default function ReportsPage() {
     }
     
     const recs = [];
-    const lowAccuracySessions = sessions.filter((s: any) => s.accuracy < 60);
-    const highAccuracySessions = sessions.filter((s: any) => s.accuracy >= 90);
-
-    if (highAccuracySessions.length > 3) {
-      recs.push(`¡Excelente avance! ${child?.name} domina con éxito varias áreas. Es momento de probar niveles Avanzados.`);
+    if (stats.avgAccuracy >= 90) {
+      recs.push(`¡Excelente avance! ${childData?.name} domina con éxito varias áreas. Es momento de probar niveles Avanzados.`);
+    } else if (stats.avgAccuracy < 60) {
+      recs.push(`Se recomienda reforzar las actividades actuales con apoyo de un adulto.`);
     }
 
-    if (lowAccuracySessions.length > 2) {
-      const problematicGame = lowAccuracySessions[0].gameName;
-      recs.push(`Se recomienda reforzar el área de "${problematicGame}" con apoyo de un adulto.`);
-    }
-
-    if (stats.avgAccuracy > 80) {
-      recs.push("La precisión general es muy alta, lo que indica un gran enfoque y comprensión.");
+    if (stats.totalSessions > 10) {
+      recs.push("La constancia está ayudando a consolidar los aprendizajes.");
     }
 
     return recs.length > 0 ? recs : ["Continúa con el plan de actividades diario para mantener el progreso."];
-  }, [sessions, child, stats]);
+  }, [childData, stats]);
 
-  if (childLoading || sessionsLoading) {
+  if (childLoading || (sessionsLoading && !stats.hasData)) {
     return <LoadingState message="Analizando datos pedagógicos..." onRetry={() => window.location.reload()} />;
   }
 
@@ -87,7 +100,6 @@ export default function ReportsPage() {
       />
 
       <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-10">
-        {/* Resumen de Métricas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <AppCard className="p-6 bg-primary text-white space-y-2 shadow-2xl shadow-primary/20">
             <TrendingUp className="w-8 h-8 opacity-50" />
@@ -108,8 +120,7 @@ export default function ReportsPage() {
           </AppCard>
         </div>
 
-        {/* Modo sin datos / Recomendaciones Iniciales */}
-        {!sessions?.length && (
+        {!stats.hasData && (
           <AppCard className="p-8 bg-white border-2 border-dashed border-primary/20 space-y-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
@@ -117,7 +128,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <h3 className="text-xl font-black text-primary uppercase">¡Bienvenido al Reporte!</h3>
-                <p className="text-sm text-muted-foreground font-medium">Aquí verás el progreso de {child?.name} conforme juegue.</p>
+                <p className="text-sm text-muted-foreground font-medium">Aquí verás el progreso de {childData?.name} conforme juegue.</p>
               </div>
             </div>
             
@@ -126,20 +137,19 @@ export default function ReportsPage() {
                 <Lightbulb className="w-3 h-3" /> Pasos sugeridos para hoy
               </h4>
               <div className="grid gap-3">
-                <div className="p-4 bg-muted/30 rounded-2xl flex items-center justify-between group hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/child/${childId}/activities`)}>
+                <button className="p-4 bg-muted/30 rounded-2xl flex items-center justify-between group hover:bg-muted/50 transition-colors text-left" onClick={() => router.push(`/child/${childId}/activities`)}>
                   <span className="text-sm font-bold text-foreground">1. Completar un juego de Emociones</span>
-                  <AppButton size="sm" variant="ghost" className="h-8 text-[9px]">IR</AppButton>
-                </div>
-                <div className="p-4 bg-muted/30 rounded-2xl flex items-center justify-between group hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/child/${childId}/assessment`)}>
+                  <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[9px] font-black uppercase">IR</div>
+                </button>
+                <button className="p-4 bg-muted/30 rounded-2xl flex items-center justify-between group hover:bg-muted/50 transition-colors text-left" onClick={() => router.push(`/child/${childId}/assessment`)}>
                   <span className="text-sm font-bold text-foreground">2. Realizar Evaluación Inicial</span>
-                  <AppButton size="sm" variant="ghost" className="h-8 text-[9px]">IR</AppButton>
-                </div>
+                  <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[9px] font-black uppercase">IR</div>
+                </button>
               </div>
             </div>
           </AppCard>
         )}
 
-        {/* Recomendaciones Pedagógicas (Visibles siempre para guiar) */}
         <section className="space-y-4">
           <h3 className="px-2 text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-accent fill-accent" /> Sugerencias del Sistema
@@ -156,11 +166,10 @@ export default function ReportsPage() {
           </AppCard>
         </section>
 
-        {/* Historial Detallado */}
         {sessions && sessions.length > 0 && (
           <section className="space-y-4">
             <h3 className="px-2 text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
-              <Calendar className="w-4 h-4" /> Historial de Sesiones
+              <Calendar className="w-4 h-4" /> Actividad Reciente
             </h3>
             <div className="grid gap-3">
               {sessions.map((s: any) => (

@@ -1,12 +1,11 @@
 'use client';
 
-import { doc, setDoc, getDoc, updateDoc, increment, Firestore, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/firebase';
 
 export const progressService = {
-  updateProgress: async (db: Firestore, childId: string, gameId: string, stats: any) => {
+  updateProgress: async (childId: string, gameId: string, stats: any) => {
     const progressId = `${childId}_${gameId}`;
-    // Ruta correcta según las reglas: /children/{childId}/game_progress/{id}
-    // Nota: El backend.json usa game_progress como subcolección
     const ref = doc(db, 'children', childId, 'game_progress', progressId);
     
     const snap = await getDoc(ref);

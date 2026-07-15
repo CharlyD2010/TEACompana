@@ -7,12 +7,14 @@ import {
   getDoc, 
   getDocs, 
   query, 
-  where,
-  Firestore
+  where 
 } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { db } from '@/firebase';
 import { Child, UserProfile } from '@/lib/types';
 
+/**
+ * Servicio para la gestión de perfiles de niños y permisos de acceso.
+ */
 export const childrenService = {
   createChild: async (userId: string, childData: Partial<Child>): Promise<string> => {
     const childId = Math.random().toString(36).substr(2, 9);
@@ -36,6 +38,15 @@ export const childrenService = {
       createdAt: new Date().toISOString(),
       points: 0,
       stars: 0,
+      summary: {
+        totalSessions: 0,
+        totalPoints: 0,
+        totalStars: 0,
+        totalCorrectAnswers: 0,
+        totalIncorrectAnswers: 0,
+        totalQuestions: 0,
+        totalDurationSeconds: 0,
+      }
     };
 
     await setDoc(childRef, newChild);

@@ -1,11 +1,11 @@
 'use client';
 
-import { collection, doc, setDoc, query, orderBy, limit, getDocs, Firestore } from 'firebase/firestore';
+import { collection, doc, setDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { db } from '@/firebase';
 
 export const learningPlanService = {
-  saveLearningPlan: async (db: Firestore, childId: string, createdBy: string, planData: any) => {
+  saveLearningPlan: async (childId: string, createdBy: string, planData: any) => {
     const id = Math.random().toString(36).substr(2, 9);
-    // Ruta corregida a subcolección según reglas
     const ref = doc(db, 'children', childId, 'learning_plans', id);
     const plan = {
       ...planData,
@@ -19,7 +19,7 @@ export const learningPlanService = {
     return plan;
   },
 
-  getLatestPlan: async (db: Firestore, childId: string) => {
+  getLatestPlan: async (childId: string) => {
     const q = query(
       collection(db, 'children', childId, 'learning_plans'),
       orderBy('createdAt', 'desc'),

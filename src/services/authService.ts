@@ -8,8 +8,11 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/config/firebase';
+import { auth, db } from '@/firebase';
 
+/**
+ * Servicio unificado para la gestión de autenticación y perfiles de usuario.
+ */
 export const authService = {
   login: async (email: string, pass: string) => {
     return signInWithEmailAndPassword(auth, email, pass);
@@ -25,8 +28,6 @@ export const authService = {
 
   registerParent: async (email: string, pass: string, fullName: string) => {
     const { user } = await createUserWithEmailAndPassword(auth, email, pass);
-    
-    // Actualizar nombre en Auth
     await updateProfile(user, { displayName: fullName });
 
     const userRef = doc(db, 'users', user.uid);
@@ -43,8 +44,6 @@ export const authService = {
 
   registerTeacher: async (email: string, pass: string, fullName: string) => {
     const { user } = await createUserWithEmailAndPassword(auth, email, pass);
-    
-    // Actualizar nombre en Auth
     await updateProfile(user, { displayName: fullName });
 
     const userRef = doc(db, 'users', user.uid);
