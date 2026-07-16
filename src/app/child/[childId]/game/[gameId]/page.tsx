@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AppButton, LoadingState } from '@/components/app-components';
 import { CheckCircle2, XCircle, Volume2, X, Star, AlertCircle } from 'lucide-react';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useDoc } from '@/firebase';
 import { doc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -188,12 +188,17 @@ const GAME_LEVELS: Record<string, Record<number, GameLevelData>> = {
 
 export default function GamePlayPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const childId = params?.childId as string;
   const gameId = params?.gameId as string;
   const router = useRouter();
   const db = useFirestore();
   const { user } = useUser();
   
+  // Validar existencia del niño
+  const childRef = useMemo(() => db && childId ? doc(db, 'children', childId) : null, [db, childId]);
+  const { data: child, loading: childLoading } = useDoc(childRef);
+
   const [currentLevel, setCurrentLevel] = useState(1);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [results, setResults] = useState({ correct: 0, startTime: Date.now() });
@@ -202,6 +207,17 @@ export default function GamePlayPage() {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Cargar nivel desde URL si existe
+  useEffect(() => {
+    const lvl = searchParams.get('lvl');
+    if (lvl) {
+      const l = parseInt(lvl);
+      if (!isNaN(l) && l >= 1 && l <= 3) {
+        setCurrentLevel(l);
+      }
+    }
+  }, [searchParams]);
 
   const gameData = useMemo(() => {
     if (!gameId) return null;
@@ -381,12 +397,14 @@ export default function GamePlayPage() {
     }, 1200);
   };
 
-  if (!gameData || !levelData || !currentQ) {
+  if (childLoading) return <LoadingState message="Preparando actividad..." />;
+
+  if (!child || !gameData || !levelData || !currentQ) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-10 text-center space-y-6">
         <AlertCircle className="w-16 h-16 text-destructive opacity-50" />
         <h2 className="text-2xl font-black text-primary uppercase">Actividad no encontrada</h2>
-        <p className="text-muted-foreground font-medium">Lo sentimos, no pudimos cargar los datos de esta actividad o nivel.</p>
+        <p className="text-muted-foreground font-medium">Lo sentimos, no pudimos cargar los datos de esta actividad, nivel o el perfil del niño es inválido.</p>
         <AppButton onClick={() => router.push(`/child/${childId}/activities`)} aria-label="Volver a Actividades">Volver a Actividades</AppButton>
       </div>
     );
@@ -465,7 +483,7 @@ export default function GamePlayPage() {
                 onClick={() => handleOption(i)} 
                 className={`min-h-[140px] md:min-h-[180px] p-4 bg-white rounded-[2.5rem] shadow-xl border-4 border-transparent transition-all active:scale-95 flex items-center justify-center relative overflow-hidden group
                   ${feedback === 'correct' && isCorrect ? 'border-secondary bg-secondary/10 scale-105' : ''}
-                  ${feedback === 'wrong' && !isCorrect && feedback === 'wrong' ? 'opacity-40 grayscale blur-[1px]' : ''}
+                  ${feedback === 'wrong' && feedback !== null && !isCorrect ? 'opacity-40 grayscale blur-[1px]' : ''}
                 `}
                 disabled={!!feedback}
                 aria-label={`Opción ${i + 1}: ${opt}`}
