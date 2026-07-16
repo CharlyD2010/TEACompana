@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppCard, AppButton, AppHeader, LoadingState } from '@/components/app-components';
-import { Smile, Shapes, Hash, Book, Clock, Star, Volume2, Search, Brain, ShieldAlert, Lock, ChevronRight, Type, Puzzle } from 'lucide-react';
+import { Smile, Shapes, Hash, Book, Clock, Star, Volume2, Search, Brain, Lock, ChevronRight, Type } from 'lucide-react';
 import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 
@@ -71,7 +71,6 @@ export default function ActivitiesPage() {
       </AppHeader>
 
       <div className="p-4 md:p-8 space-y-10">
-        {/* Categorías Visuales */}
         <div className="space-y-4">
           <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] px-2 flex items-center gap-2">
             <Search className="w-3.5 h-3.5" /> Áreas de Aprendizaje
@@ -94,7 +93,6 @@ export default function ActivitiesPage() {
           </div>
         </div>
 
-        {/* Rejilla de Actividades Progresivas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {filteredGames.map((game) => {
             const catColor = CATEGORIES.find(c => c.id === game.cat)?.color || 'bg-muted';
@@ -114,7 +112,6 @@ export default function ActivitiesPage() {
                     <p className="text-xs text-muted-foreground font-medium mt-1">{game.desc}</p>
                   </div>
 
-                  {/* Selector de Niveles 1-3 */}
                   <div className="space-y-3">
                     {[1, 2, 3].map(lvl => {
                       const levelProgress = progress?.find((p: any) => p.gameId === game.id && p.levelId === lvl);

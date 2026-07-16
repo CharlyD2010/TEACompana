@@ -1,1 +1,2 @@
-// DEPRECATED: Mock database is no longer used. Real Firestore services are in place.
+// DEPRECATED: Mock database has been replaced by real Firestore services.
+export {};

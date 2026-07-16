@@ -1,1 +1,5 @@
-// DEPRECATED: This directory and its contents are obsolete and replaced by src/app/children/ and src/app/child/
+import { redirect } from 'next/navigation';
+
+export default function DashboardRedirect() {
+  redirect('/children');
+}

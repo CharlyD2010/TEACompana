@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppButton, AppCard, AppHeader, LoadingState, EmptyState, SelectChip } from '@/components/app-components';
-import { Plus, ChevronRight, Settings, Filter, LogOut, User as UserIcon, RefreshCcw, Star, Trophy, ArrowUpDown } from 'lucide-react';
+import { Plus, ChevronRight, Settings, Filter, LogOut, User as UserIcon, Star, Trophy, ArrowUpDown } from 'lucide-react';
 import { childrenService } from '@/services/childrenService';
 import { authService } from '@/services/authService';
 import { useUser, useFirestore } from '@/firebase';
@@ -93,7 +93,6 @@ export default function MyChildrenPage() {
       </AppHeader>
 
       <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-10">
-        {/* Cabecera de Perfil */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 md:p-8 rounded-[3rem] shadow-xl border-2 border-primary/5">
           <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
             <div className="w-16 h-16 md:w-20 md:h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center text-primary text-3xl md:text-4xl shadow-inner">
@@ -115,7 +114,6 @@ export default function MyChildrenPage() {
           </AppButton>
         </div>
 
-        {/* Herramientas de Docente */}
         {isTeacher && (
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center px-4">
@@ -145,7 +143,6 @@ export default function MyChildrenPage() {
           </div>
         )}
 
-        {/* Listado de Alumnos */}
         <div className="space-y-6">
           <div className="flex items-center justify-between px-4">
             <h3 className="font-black text-primary uppercase text-xs tracking-[0.2em]">Listado de Alumnos</h3>
